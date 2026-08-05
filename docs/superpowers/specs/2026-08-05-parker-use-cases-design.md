@@ -26,6 +26,8 @@ The central product rule is:
 - Read, routine, consequential, and irreversible action classes.
 - Explicit confirmations, cancellation, receipts, recovery, and latency evidence.
 - Deterministic mock providers for future calendar, weather, task, file, and messaging integrations.
+- Controlled proactive event ingestion for high-signal email, message, and shipment updates.
+- A designated-speaker announcement queue with quiet hours, deduplication, and acknowledgement state.
 - Traceability from each product use case to simulator scenarios and later adapters.
 - A local test console showing plans, state, confirmations, receipts, adapter health, and latency.
 
@@ -40,11 +42,12 @@ The central product rule is:
 
 ## 3. Journey map and priority
 
-PARKER's use cases are grouped into six journeys.
+PARKER's use cases are grouped into seven journeys.
 
 | Journey | User goal | Typical risk | First capabilities |
 |---|---|---:|---|
 | **Orient me** | Understand the day and the state of the home | Read | Calendar, weather, reminders, home/device status, concise briefings |
+| **Keep me ahead** | Hear about important inbound events before asking | Read-only | Event ingestion, priority triage, shipment tracking, speaker announcements |
 | **Run the room** | Control the apartment naturally from the current room | Read / routine | Room-aware lights, climate, media, scenes, follow-up conversation |
 | **Put me into a mode** | Start focus, sleep, hosting, or away mode | Routine / consequential | Multi-device plans, meaningful-change preview, expiry and reversal |
 | **Coordinate my day** | Turn intentions into reminders, notes, files, and preparation | Read / routine | Calendar lookup, task capture, meeting preparation, research/file retrieval |
@@ -54,11 +57,11 @@ PARKER's use cases are grouped into six journeys.
 ### Delivery priority
 
 - **P0 — Trust loop:** room-aware control, risk classification, confirmation, cancellation, receipts, errors, state display, and latency traces.
-- **P1 — Daily utility:** morning briefing, focus mode, leave-home review, arrival/hosting routine, and apartment status.
+- **P1 — Daily utility:** morning briefing, controlled proactive alerts, focus mode, leave-home review, arrival/hosting routine, and apartment status.
 - **P2 — Personal/work delegation:** calendar, reminders, files, research, meeting preparation, and draft creation.
 - **P3 — Proactivity:** anomaly detection, suggestions, time-based routines, and narrowly configured interventions.
 
-The current voice lab can exercise most of **Run the room** and **Notice and recover** immediately. The remaining journeys should be specified now and represented initially by deterministic mock providers.
+The current voice lab can exercise most of **Run the room** and **Notice and recover** immediately. The remaining journeys should be specified now and represented initially by deterministic mock providers. Controlled proactive alerts are in scope; autonomous intervention remains deferred.
 
 ## 4. Product use-case cards
 
@@ -168,6 +171,18 @@ Every card has the following fields:
 - **Simulator mapping:** `cold_room_explains_before_action` with deterministic sensor history and climate state.
 - **Later integration:** event-driven sensor streams and a proactive detection layer.
 
+### UC-09 — Keep me ahead
+
+- **User goal:** hear about high-signal inbound events without having to ask PARKER first.
+- **Examples:** “You have a new message from Alex.” “Your package has shipped; here is the latest tracking information.”
+- **Context:** new email or iMessage/SMS event, sender or source priority, shipment status, current time, quiet-hours policy, and the designated speaker.
+- **Behaviour:** detect a new item, deduplicate it, classify it with deterministic rules first, optionally summarise a shortlisted message or resolve a shipment status, and speak a concise metadata-first announcement through the designated speaker.
+- **Risk:** read-only. PARKER may inspect, classify, summarise, and announce, but it must not reply, send, archive, delete, or alter a message as part of this use case.
+- **Failure path:** suppress duplicate events; keep low-confidence or routine items silent; disclose stale tracking data; report mailbox or watcher health without fabricating an alert; queue speech during quiet hours.
+- **Evidence:** source and message identifiers, classification, announcement timestamp, acknowledgement state, source freshness, tracking status, and delivery latency.
+- **Simulator mapping:** `priority_message_announced_once`, `package_shipped_with_tracking_summary`, `duplicate_event_suppressed`, `quiet_hours_queue_and_release`, `ordinary_newsletter_not_announced`, and `read_full_message_only_after_request`.
+- **Later integration:** Gmail API or IMAP, macOS Messages access, carrier tracking sources, and Home Assistant/Piper speaker delivery.
+
 ## 5. Trust and safety model
 
 ### Action classes
@@ -206,6 +221,7 @@ The product card and simulator fixture must remain linked by stable identifiers.
 | UC-06 | `draft_message_requires_confirmation` plus confirmed send | Messaging provider | iMessage/email/messaging adapter |
 | UC-07 | Existing not-found/context-expiry plus offline/partial-failure fixtures | Error injection and retry state | Real adapter health/status |
 | UC-08 | `cold_room_explains_before_action` | Sensor history and climate state | Event-driven sensor/proactive layer |
+| UC-09 | `priority_message_announced_once` plus shipment and quiet-hours fixtures | Mail/message watchers, event deduplication, announcement queue, tracking mock | Gmail/IMAP, Messages.app, carrier sources, Home Assistant/Piper |
 
 ### Fixture expectation shape
 
@@ -258,6 +274,7 @@ The initial implementation should establish the general contract with a represen
 5. one read-only personal/work briefing;
 6. one draft-then-send irreversible action;
 7. one offline or partial-failure path.
+8. one high-signal proactive message or shipment announcement with deduplication and quiet-hours handling.
 
 The local test console should expose, for each run:
 
@@ -282,6 +299,11 @@ The design is implemented successfully when:
 - no failed adapter call produces a success response;
 - mixed-risk plans show safe and gated steps separately;
 - stale source data is disclosed when relevant;
+- high-signal proactive events are announced once through the designated speaker;
+- routine or low-confidence inbound items remain silent;
+- quiet-hours alerts are queued and released without duplication;
+- full message content is not spoken until explicitly requested;
+- proactive scanning never sends or modifies an external message;
 - the state display exposes current state, pending confirmation, latest receipt, adapter health, and latency;
 - ordinary local interactions meet the existing `< 3 s` end-to-end target under the configured benchmark profile;
 - a user can tell, without reading logs, what PARKER did and why;
