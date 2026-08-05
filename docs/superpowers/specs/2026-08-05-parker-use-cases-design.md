@@ -28,6 +28,8 @@ The central product rule is:
 - Deterministic mock providers for future calendar, weather, task, file, and messaging integrations.
 - Controlled proactive event ingestion for high-signal email, message, and shipment updates.
 - A designated-speaker announcement queue with quiet hours, deduplication, and acknowledgement state.
+- A privacy policy layer with explicit Guest Mode and privacy-safe automatic inference.
+- A three-level presence model: voice-source room, home/away presence, and optional room occupancy.
 - Traceability from each product use case to simulator scenarios and later adapters.
 - A local test console showing plans, state, confirmations, receipts, adapter health, and latency.
 
@@ -39,6 +41,7 @@ The central product rule is:
 - Autonomous open-ended agent behaviour.
 - Silent background actions based on unbounded inference.
 - Proactive intervention before the trust loop is proven.
+- Camera-based identity or guest recognition.
 
 ## 3. Journey map and priority
 
@@ -62,6 +65,16 @@ PARKER's use cases are grouped into seven journeys.
 - **P3 — Proactivity:** anomaly detection, suggestions, time-based routines, and narrowly configured interventions.
 
 The current voice lab can exercise most of **Run the room** and **Notice and recover** immediately. The remaining journeys should be specified now and represented initially by deterministic mock providers. Controlled proactive alerts are in scope; autonomous intervention remains deferred.
+
+### Room and presence model
+
+PARKER must not conflate three different signals:
+
+1. **Voice-source room:** the Home Assistant Area assigned to the satellite that heard the request. This is available without an occupancy sensor and is sufficient to resolve “the light” or “here.”
+2. **Home/away presence:** whether the user's phone or another device tracker places the user at home or in a broad zone. This is not room-level location.
+3. **Room occupancy:** whether a room appears occupied, using PIR, mmWave, door events, Bluetooth/Wi-Fi proxies, or a fused sensor. This does not, by itself, identify the person present.
+
+The designated proactive speaker remains a fixed output target until room-level personal presence is proven. A room-origin signal may route an interactive response; it must not be treated as proof that the user is still in that room later.
 
 ## 4. Product use-case cards
 
@@ -183,6 +196,18 @@ Every card has the following fields:
 - **Simulator mapping:** `priority_message_announced_once`, `package_shipped_with_tracking_summary`, `duplicate_event_suppressed`, `quiet_hours_queue_and_release`, `ordinary_newsletter_not_announced`, and `read_full_message_only_after_request`.
 - **Later integration:** Gmail API or IMAP, macOS Messages access, carrier tracking sources, and Home Assistant/Piper speaker delivery.
 
+### UC-10 — Host privately with Guest Mode
+
+- **User goal:** allow guests to use the apartment without PARKER broadcasting private information.
+- **Examples:** “PARKER, guests are here for four hours.” “Turn on Guest Mode.”
+- **Context:** explicit mode command or display control, expiry time, optional owner device presence, recent entry event, room occupancy, announcement queue, and safety-alert policy.
+- **Behaviour:** set `guest_mode`, suppress private email, message, calendar, shipment, financial, and work announcements from the designated speaker, hold them for private delivery, mask private details on public displays, and continue safety-critical announcements. Home-control responses remain available but must not expose private context.
+- **Risk:** explicit mode activation is a routine policy change; automatic inference is advisory and privacy-preserving rather than identity proof.
+- **Failure path:** if occupancy evidence is stale or ambiguous, do not announce private content; keep private events queued and notify the user through a private channel when possible. Never discard an alert because Guest Mode was active.
+- **Evidence:** mode state, activation authority, expiry, reason, events held, events released, output target, and privacy decision.
+- **Simulator mapping:** `guest_mode_manual_suppresses_private_announcement`, `guest_likely_auto_mutes_private_alerts`, `guest_mode_expiry_restores_queue`, and `safety_alert_bypasses_guest_mode`.
+- **Later integration:** Home Assistant helper/state machine, optional room occupancy sensors, owner device tracking, event watchers, designated speaker, and private phone delivery.
+
 ## 5. Trust and safety model
 
 ### Action classes
@@ -203,9 +228,11 @@ Every card has the following fields:
 5. Stale information is labelled when it could change the decision.
 6. Plans are itemised. Mixed-risk plans separate safe actions from gated actions, and each step reports success or failure.
 7. “Done” is reserved for a verified result from the adapter.
-8. Proactivity suggests before it acts. Autonomous intervention is opt-in and narrowly bounded.
-9. Receipts are the system of record. Executed, failed, denied, and cancelled consequential attempts are recorded.
-10. Recovery is part of every use case, not an afterthought.
+8. **Proactivity suggests before it acts.** Autonomous intervention is opt-in and narrowly bounded.
+9. **Receipts are the system of record.** Executed, failed, denied, and cancelled consequential attempts are recorded.
+10. **Room origin is not current personal location.** A satellite identifies where a request began, not where the user remains afterward.
+11. **Guest inference fails closed for privacy.** Uncertain occupancy may mute private TTS, but it must never expose private content or claim to identify a guest.
+12. **Recovery is part of every use case, not an afterthought.**
 
 ## 6. Simulator and integration traceability
 
@@ -222,6 +249,7 @@ The product card and simulator fixture must remain linked by stable identifiers.
 | UC-07 | Existing not-found/context-expiry plus offline/partial-failure fixtures | Error injection and retry state | Real adapter health/status |
 | UC-08 | `cold_room_explains_before_action` | Sensor history and climate state | Event-driven sensor/proactive layer |
 | UC-09 | `priority_message_announced_once` plus shipment and quiet-hours fixtures | Mail/message watchers, event deduplication, announcement queue, tracking mock | Gmail/IMAP, Messages.app, carrier sources, Home Assistant/Piper |
+| UC-10 | `guest_mode_manual_suppresses_private_announcement` plus expiry and safety-bypass fixtures | Privacy policy, mode timer, private queue, optional occupancy inference | Home Assistant helper/state, device trackers, room sensors, private delivery |
 
 ### Fixture expectation shape
 
@@ -265,7 +293,7 @@ Multi-action scenarios must assert order, gating, partial failure, final state, 
 
 ## 7. First implementation boundary
 
-The initial implementation should establish the general contract with a representative slice rather than attempt all eight cards simultaneously:
+The initial implementation should establish the general contract with a representative slice rather than attempt all cards simultaneously:
 
 1. one room-aware read and routine action;
 2. one ambiguous request;
@@ -273,8 +301,9 @@ The initial implementation should establish the general contract with a represen
 4. one mixed-risk multi-action plan;
 5. one read-only personal/work briefing;
 6. one draft-then-send irreversible action;
-7. one offline or partial-failure path.
+7. one offline or partial-failure path;
 8. one high-signal proactive message or shipment announcement with deduplication and quiet-hours handling.
+9. one manual Guest Mode run with private-alert suppression, expiry, and a safety-alert bypass.
 
 The local test console should expose, for each run:
 
@@ -304,6 +333,11 @@ The design is implemented successfully when:
 - quiet-hours alerts are queued and released without duplication;
 - full message content is not spoken until explicitly requested;
 - proactive scanning never sends or modifies an external message;
+- voice-source room is used for immediate room-aware commands without requiring occupancy sensors;
+- Guest Mode can be activated explicitly with an expiry time;
+- private alerts are held or routed privately while Guest Mode is active;
+- safety-critical alerts bypass Guest Mode;
+- automatic guest inference never speaks private content and never claims to identify a guest;
 - the state display exposes current state, pending confirmation, latest receipt, adapter health, and latency;
 - ordinary local interactions meet the existing `< 3 s` end-to-end target under the configured benchmark profile;
 - a user can tell, without reading logs, what PARKER did and why;
