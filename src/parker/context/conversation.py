@@ -91,6 +91,10 @@ class ConversationManager:
     def active_count(self) -> int:
         return sum(1 for ctx in self._conversations.values() if not ctx.is_expired)
 
+    def clear(self) -> None:
+        """Drop all active conversations."""
+        self._conversations.clear()
+
     def ensure(
         self,
         *,

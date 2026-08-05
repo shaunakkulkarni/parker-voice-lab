@@ -86,6 +86,19 @@ class StateMachine:
         self._pending_confirmation = None
         self._notify()
 
+    def reset_session(self) -> None:
+        """Clear session view fields and return to IDLE (keeps uptime/listeners)."""
+        self._state = PARKERState.IDLE
+        self._current_room = None
+        self._current_device = None
+        self._last_transcript = None
+        self._last_response = None
+        self._last_action = None
+        self._pending_confirmation = None
+        self._active_conversations = 0
+        self._errors.clear()
+        self._notify()
+
     def goto(self, new_state: PARKERState) -> None:
         """Set state without transition validation (simulator recovery)."""
         self._state = new_state

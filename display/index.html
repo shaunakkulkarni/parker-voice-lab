@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PARKER</title>
+  <title>PARKER Test Console</title>
   <style>
     :root {
       --bg: #0f1419;
@@ -14,6 +14,7 @@
       --err: #e85d5d;
       --ok: #3ecf8e;
       --panel: #1a222c;
+      --line: #2a3542;
     }
     * { box-sizing: border-box; }
     body {
@@ -25,39 +26,76 @@
         radial-gradient(900px 500px at 100% 0%, #243044 0%, transparent 50%),
         var(--bg);
       color: var(--fg);
-      padding: 2rem;
+      padding: 1.25rem;
     }
     header {
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 2rem;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
     }
-    h1 {
+    .brand h1 {
       font-family: "IBM Plex Mono", "SF Mono", monospace;
       font-weight: 500;
       letter-spacing: 0.18em;
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       margin: 0;
+    }
+    .brand .subtitle {
+      margin-top: 0.35rem;
+      color: var(--muted);
+      letter-spacing: 0.14em;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+    }
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.65rem;
+    }
+    .badge {
+      border: 1px solid var(--warn);
+      color: var(--warn);
+      padding: 0.2rem 0.55rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-family: "IBM Plex Mono", monospace;
+    }
+    .badge.danger {
+      border-color: var(--err);
+      color: var(--err);
     }
     .conn {
       font-size: 0.85rem;
       color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
     }
     .conn.live { color: var(--ok); }
     .grid {
       display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap: 1.25rem;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 1rem;
     }
-    @media (max-width: 800px) {
+    @media (max-width: 960px) {
       .grid { grid-template-columns: 1fr; }
     }
     section {
       background: color-mix(in srgb, var(--panel) 88%, transparent);
-      border: 1px solid #2a3542;
+      border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 1.25rem 1.4rem;
+      padding: 1.1rem 1.2rem;
+    }
+    section h2 {
+      margin: 0 0 0.85rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
     }
     .label {
       font-size: 0.72rem;
@@ -67,50 +105,179 @@
       margin-bottom: 0.35rem;
     }
     .value {
-      font-size: 1.35rem;
+      font-size: 1.05rem;
       font-weight: 500;
       word-break: break-word;
     }
     .state {
       font-family: "IBM Plex Mono", monospace;
-      font-size: 2rem;
+      font-size: 1.7rem;
       color: var(--accent);
     }
     .state.confirming { color: var(--warn); }
     .state.error { color: var(--err); }
-    .stack { display: grid; gap: 1rem; }
-    #errors:empty::after { content: "None"; color: var(--muted); }
-    #errors li { margin-bottom: 0.25rem; }
+    .stack { display: grid; gap: 0.85rem; }
+    form.stack label {
+      display: grid;
+      gap: 0.35rem;
+      font-size: 0.85rem;
+    }
+    input, select, button, textarea {
+      font: inherit;
+      color: var(--fg);
+      background: #121820;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.55rem 0.7rem;
+    }
+    textarea { min-height: 4.5rem; resize: vertical; }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+    button {
+      cursor: pointer;
+      background: #1c2a38;
+    }
+    button.primary {
+      background: color-mix(in srgb, var(--accent) 35%, #121820);
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+    }
+    button.warn {
+      background: color-mix(in srgb, var(--warn) 28%, #121820);
+      border-color: color-mix(in srgb, var(--warn) 55%, var(--line));
+    }
+    button.danger {
+      background: color-mix(in srgb, var(--err) 28%, #121820);
+      border-color: color-mix(in srgb, var(--err) 55%, var(--line));
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .quick button { font-size: 0.82rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.45rem 0.35rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .pill {
+      display: inline-block;
+      padding: 0.12rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      font-family: "IBM Plex Mono", monospace;
+      border: 1px solid var(--line);
+    }
+    .pill.pass { color: var(--ok); border-color: var(--ok); }
+    .pill.fail { color: var(--err); border-color: var(--err); }
+    .pill.manual { color: var(--accent); border-color: var(--accent); }
+    .pill.miss { color: var(--err); border-color: var(--err); }
+    .pill.skipped { color: var(--muted); }
+    #confirmation-panel[hidden] { display: none !important; }
+    #events li, #receipt-fields li, #health-list li, #trace-list li {
+      margin-bottom: 0.3rem;
+    }
+    #events {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.88rem;
+      max-height: 16rem;
+      overflow: auto;
+    }
+    #events li {
+      border-bottom: 1px solid var(--line);
+      padding: 0.35rem 0;
+      color: var(--muted);
+    }
+    #events li strong { color: var(--fg); font-weight: 600; }
+    .full { grid-column: 1 / -1; }
+    .muted { color: var(--muted); }
   </style>
 </head>
 <body>
   <header>
-    <h1>PARKER</h1>
+    <div class="brand">
+      <h1>PARKER</h1>
+      <div class="subtitle">Test Console</div>
+      <div class="badges">
+        <span class="badge">Mock Mode</span>
+        <span class="badge danger">No Live Device Actions</span>
+      </div>
+    </div>
     <div id="conn" class="conn">connecting…</div>
   </header>
+
   <div class="grid">
-    <section class="stack">
+    <section id="manual-command" class="stack">
+      <h2>Manual command</h2>
+      <form id="command-form" class="stack">
+        <label for="utterance">Utterance
+          <textarea id="utterance" name="utterance" required placeholder="Turn on the living room light"></textarea>
+        </label>
+        <label for="area_id">Room / area
+          <select id="area_id" name="area_id">
+            <option value="living_room">living_room</option>
+            <option value="bedroom">bedroom</option>
+            <option value="kitchen">kitchen</option>
+            <option value="hallway">hallway</option>
+          </select>
+        </label>
+        <label for="device_id">Voice device
+          <select id="device_id" name="device_id">
+            <option value="voice_pe_living_room">voice_pe_living_room</option>
+          </select>
+        </label>
+        <div class="row">
+          <button type="submit" id="submit-command" class="primary">Submit</button>
+          <button type="button" id="clear-command">Clear</button>
+        </div>
+      </form>
+      <div class="quick row" id="quick-commands">
+        <button type="button" data-utterance="Turn on the living room light">Living room light</button>
+        <button type="button" data-utterance="What's the temperature?">Temperature</button>
+        <button type="button" data-utterance="Lock the front door">Lock front door</button>
+        <button type="button" data-utterance="Turn on the garage light">Garage light</button>
+      </div>
+    </section>
+
+    <section id="current-state" class="stack">
+      <h2>Current state</h2>
       <div>
         <div class="label">State</div>
         <div id="state" class="state">idle</div>
+      </div>
+      <div>
+        <div class="label">Current room</div>
+        <div id="room" class="value">—</div>
+      </div>
+      <div>
+        <div class="label">Current voice device</div>
+        <div id="device" class="value">—</div>
       </div>
       <div>
         <div class="label">Last transcript</div>
         <div id="transcript" class="value">—</div>
       </div>
       <div>
-        <div class="label">Last response</div>
+        <div class="label">Last spoken response</div>
         <div id="response" class="value">—</div>
-      </div>
-    </section>
-    <section class="stack">
-      <div>
-        <div class="label">Room / device</div>
-        <div id="room" class="value">—</div>
-      </div>
-      <div>
-        <div class="label">Pending confirmation</div>
-        <div id="pending" class="value">—</div>
       </div>
       <div>
         <div class="label">Active conversations</div>
@@ -121,46 +288,439 @@
         <div id="uptime" class="value">0s</div>
       </div>
       <div>
-        <div class="label">Errors</div>
-        <ul id="errors" class="value" style="padding-left:1.1rem;margin:0;font-size:1rem;"></ul>
+        <div class="label">Last result</div>
+        <div id="last-result" class="value">—</div>
       </div>
     </section>
+
+    <section id="confirmation-panel" class="stack" hidden>
+      <h2>Confirmation</h2>
+      <p class="value">PARKER is waiting for confirmation</p>
+      <div>
+        <div class="label">Spoken prompt</div>
+        <div id="confirm-prompt" class="value">—</div>
+      </div>
+      <div>
+        <div class="label">Category</div>
+        <div id="confirm-category" class="value">—</div>
+      </div>
+      <div>
+        <div class="label">Service</div>
+        <div id="confirm-service" class="value">—</div>
+      </div>
+      <div>
+        <div class="label">Target entity</div>
+        <div id="confirm-target" class="value">—</div>
+      </div>
+      <div>
+        <div class="label">Parameters</div>
+        <div id="confirm-params" class="value">—</div>
+      </div>
+      <div class="row">
+        <button type="button" id="confirm-btn" class="primary">Confirm</button>
+        <button type="button" id="deny-btn" class="danger">Deny</button>
+        <button type="button" id="cancel-btn" class="warn">Cancel</button>
+      </div>
+    </section>
+
+    <section id="scenario-runner" class="stack full">
+      <h2>Scenario runner</h2>
+      <div class="row" style="margin-bottom:0.75rem;">
+        <button type="button" id="run-all" class="primary">Run all scenarios</button>
+        <button type="button" id="reset-session">Reset session</button>
+      </div>
+      <div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Scenario</th>
+              <th>Expected</th>
+              <th>Last result</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="scenario-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="pipeline-trace" class="stack">
+      <h2>Pipeline trace</h2>
+      <ul id="trace-list" class="value" style="padding-left:1.1rem;margin:0;font-size:0.95rem;"></ul>
+      <p id="trace-empty" class="muted">No latency trace in this session.</p>
+    </section>
+
+    <section id="action-receipt" class="stack">
+      <h2>Action receipt</h2>
+      <ul id="receipt-fields" class="value" style="padding-left:1.1rem;margin:0;font-size:0.95rem;"></ul>
+      <p id="receipt-empty" class="muted">No action receipt in this session.</p>
+    </section>
+
+    <section id="health-panel" class="stack">
+      <h2>Health</h2>
+      <ul id="health-list" class="value" style="padding-left:1.1rem;margin:0;font-size:0.95rem;"></ul>
+    </section>
+
+    <section id="event-log" class="stack">
+      <h2>Event log</h2>
+      <ul id="events"></ul>
+    </section>
   </div>
+
   <script>
     const $ = (id) => document.getElementById(id);
-    function fmt(v) { return (v === null || v === undefined || v === "") ? "—" : String(v); }
-    function apply(status) {
+    const fmt = (v) => (v === null || v === undefined || v === "") ? "—" : String(v);
+    let busy = false;
+    let scenarios = [];
+    let lastResults = {};
+
+    function setBusy(next) {
+      busy = next;
+      document.querySelectorAll(
+        "#submit-command, #run-all, #reset-session, #scenario-rows button, #confirm-btn, #deny-btn, #cancel-btn, #quick-commands button"
+      ).forEach((el) => { el.disabled = next; });
+    }
+
+    function resultPill(passed) {
+      const span = document.createElement("span");
+      span.className = "pill";
+      if (passed === true) {
+        span.classList.add("pass");
+        span.textContent = "PASS";
+      } else if (passed === false) {
+        span.classList.add("fail");
+        span.textContent = "FAIL";
+      } else {
+        span.classList.add("manual");
+        span.textContent = "MANUAL";
+      }
+      return span;
+    }
+
+    function expectedText(scenario) {
+      if (scenario.expected_error) return "error: " + scenario.expected_error;
+      if (scenario.requires_confirmation) return "confirmation required";
+      if (scenario.expected_action) {
+        const a = scenario.expected_action;
+        return a.domain + "." + a.service + " → " + a.entity;
+      }
+      if (scenario.expected_category) return "category: " + scenario.expected_category;
+      return "—";
+    }
+
+    function applyStatus(status) {
       const stateEl = $("state");
       stateEl.textContent = status.state || "idle";
       stateEl.className = "state " + (status.state || "");
       $("transcript").textContent = fmt(status.last_transcript);
       $("response").textContent = fmt(status.last_response);
-      const room = status.current_room || "—";
-      const device = status.current_device || "—";
-      $("room").textContent = room + " / " + device;
-      if (status.pending_confirmation) {
-        const a = status.pending_confirmation;
-        $("pending").textContent = `${a.domain}.${a.service} → ${a.target_entity || "?"}`;
-      } else {
-        $("pending").textContent = "—";
-      }
+      $("room").textContent = fmt(status.current_room);
+      $("device").textContent = fmt(status.current_device);
       $("conversations").textContent = String(status.active_conversations ?? 0);
       $("uptime").textContent = Math.round(status.uptime_seconds || 0) + "s";
-      const errors = $("errors");
-      errors.innerHTML = "";
-      (status.errors || []).slice(-5).forEach((e) => {
+    }
+
+    function renderHealth(health) {
+      const list = $("health-list");
+      list.textContent = "";
+      Object.entries(health || {}).forEach(([key, value]) => {
         const li = document.createElement("li");
-        li.textContent = e;
-        errors.appendChild(li);
+        li.textContent = key + ": " + String(value);
+        list.appendChild(li);
       });
     }
+
+    function renderTrace(trace) {
+      const list = $("trace-list");
+      const empty = $("trace-empty");
+      list.textContent = "";
+      if (!trace || !trace.stages || !trace.stages.length) {
+        empty.hidden = false;
+        return;
+      }
+      empty.hidden = true;
+      trace.stages.forEach((stage) => {
+        const li = document.createElement("li");
+        const pill = document.createElement("span");
+        pill.className = "pill " + stage.status;
+        pill.textContent = stage.status.toUpperCase();
+        li.appendChild(document.createTextNode(
+          stage.stage + ": " + Number(stage.actual_ms).toFixed(1) + "ms / " +
+          Number(stage.target_ms).toFixed(0) + "ms "
+        ));
+        li.appendChild(pill);
+        list.appendChild(li);
+      });
+    }
+
+    function renderReceipt(receipt) {
+      const list = $("receipt-fields");
+      const empty = $("receipt-empty");
+      list.textContent = "";
+      if (!receipt) {
+        empty.hidden = false;
+        return;
+      }
+      empty.hidden = true;
+      const req = receipt.action_request || {};
+      const result = receipt.action_result || {};
+      const rows = [
+        ["receipt ID", receipt.id],
+        ["timestamp", req.requested_at],
+        ["trigger", receipt.trigger],
+        ["authority", receipt.authority],
+        ["domain", req.domain],
+        ["service", req.service],
+        ["target", req.target_entity],
+        ["parameters", JSON.stringify(req.parameters || {})],
+        ["category", req.category],
+        ["confirmation required", req.requires_confirmation],
+        ["confirmed", receipt.confirmed],
+        ["confirmation method", receipt.confirmation_method],
+        ["success", result.success],
+        ["new state", result.new_state ? JSON.stringify(result.new_state) : null],
+        ["error", result.error],
+      ];
+      rows.forEach(([label, value]) => {
+        const li = document.createElement("li");
+        li.textContent = label + ": " + fmt(value);
+        list.appendChild(li);
+      });
+    }
+
+    function renderEvents(events) {
+      const list = $("events");
+      list.textContent = "";
+      (events || []).slice().reverse().forEach((ev) => {
+        const li = document.createElement("li");
+        const strong = document.createElement("strong");
+        strong.textContent = ev.kind;
+        li.appendChild(strong);
+        li.appendChild(document.createTextNode(" — " + (ev.message || "")));
+        list.appendChild(li);
+      });
+    }
+
+    function renderConfirmation(pending) {
+      const panel = $("confirmation-panel");
+      if (!pending) {
+        panel.hidden = true;
+        return;
+      }
+      panel.hidden = false;
+      const action = pending.action || {};
+      $("confirm-prompt").textContent = fmt(pending.spoken_prompt);
+      $("confirm-category").textContent = fmt(pending.category || action.category);
+      $("confirm-service").textContent = fmt(action.domain && action.service ? (action.domain + "." + action.service) : null);
+      $("confirm-target").textContent = fmt(action.target_entity);
+      $("confirm-params").textContent = fmt(JSON.stringify(action.parameters || {}));
+    }
+
+    function renderScenarios() {
+      const body = $("scenario-rows");
+      body.textContent = "";
+      scenarios.forEach((scenario) => {
+        const tr = document.createElement("tr");
+        const nameTd = document.createElement("td");
+        nameTd.textContent = scenario.name;
+        const expectedTd = document.createElement("td");
+        expectedTd.textContent = expectedText(scenario);
+        const resultTd = document.createElement("td");
+        const last = lastResults[scenario.name];
+        if (last === undefined) {
+          resultTd.textContent = "—";
+        } else {
+          resultTd.appendChild(resultPill(last));
+        }
+        const actionTd = document.createElement("td");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "Run";
+        btn.dataset.scenario = scenario.name;
+        btn.addEventListener("click", () => runScenario(scenario.name));
+        actionTd.appendChild(btn);
+        tr.appendChild(nameTd);
+        tr.appendChild(expectedTd);
+        tr.appendChild(resultTd);
+        tr.appendChild(actionTd);
+        body.appendChild(tr);
+      });
+    }
+
+    function applySession(session) {
+      if (!session) return;
+      if (session.status) applyStatus(session.status);
+      renderHealth(session.health || {});
+      renderConfirmation(session.pending_confirmation);
+      renderEvents(session.recent_events || []);
+      const last = session.last_run;
+      if (last) {
+        const pill = resultPill(last.passed);
+        const wrap = $("last-result");
+        wrap.textContent = "";
+        wrap.appendChild(pill);
+        if (last.scenario_name) {
+          wrap.appendChild(document.createTextNode(" " + last.scenario_name));
+          lastResults[last.scenario_name] = last.passed;
+        } else if (last.utterance) {
+          wrap.appendChild(document.createTextNode(" " + last.utterance));
+        }
+        renderTrace(last.latency_trace);
+        renderReceipt(last.receipt || (session.recent_receipts || []).slice(-1)[0] || null);
+        renderScenarios();
+      } else {
+        $("last-result").textContent = "—";
+        renderTrace(null);
+        renderReceipt((session.recent_receipts || []).slice(-1)[0] || null);
+      }
+      setBusy(!!session.is_busy);
+    }
+
+    async function api(path, options) {
+      const resp = await fetch(path, options);
+      const data = await resp.json();
+      if (!resp.ok) {
+        const message = (data && data.error && data.error.message) || ("HTTP " + resp.status);
+        throw new Error(message);
+      }
+      return data;
+    }
+
+    async function refreshSession() {
+      const session = await api("/api/session");
+      applySession(session);
+    }
+
+    async function runCommand(utterance) {
+      setBusy(true);
+      try {
+        const data = await api("/api/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            utterance,
+            area_id: $("area_id").value,
+            device_id: $("device_id").value,
+          }),
+        });
+        applySession(data.session);
+      } catch (err) {
+        console.error(err);
+        alert(err.message || String(err));
+      } finally {
+        await refreshSession().catch(() => {});
+      }
+    }
+
+    async function runScenario(name) {
+      setBusy(true);
+      try {
+        const data = await api("/api/scenarios/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scenario_name: name }),
+        });
+        if (data.run) lastResults[name] = data.run.passed;
+        applySession(data.session);
+      } catch (err) {
+        console.error(err);
+        alert(err.message || String(err));
+      } finally {
+        await refreshSession().catch(() => {});
+      }
+    }
+
+    async function runAll() {
+      setBusy(true);
+      try {
+        const data = await api("/api/scenarios/run-all", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        });
+        (data.runs || []).forEach((run) => {
+          if (run.scenario_name) lastResults[run.scenario_name] = run.passed;
+        });
+        applySession(data.session);
+        renderScenarios();
+      } catch (err) {
+        console.error(err);
+        alert(err.message || String(err));
+      } finally {
+        await refreshSession().catch(() => {});
+      }
+    }
+
+    async function resetSession() {
+      setBusy(true);
+      try {
+        const session = await api("/api/reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        });
+        lastResults = {};
+        applySession(session);
+        renderScenarios();
+      } catch (err) {
+        console.error(err);
+        alert(err.message || String(err));
+      } finally {
+        await refreshSession().catch(() => {});
+      }
+    }
+
+    async function decide(decision) {
+      setBusy(true);
+      try {
+        const data = await api("/api/confirmation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ decision }),
+        });
+        applySession(data.session);
+      } catch (err) {
+        console.error(err);
+        alert(err.message || String(err));
+      } finally {
+        await refreshSession().catch(() => {});
+      }
+    }
+
+    $("command-form").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const utterance = $("utterance").value.trim();
+      if (!utterance) return;
+      runCommand(utterance);
+    });
+    $("clear-command").addEventListener("click", () => {
+      $("utterance").value = "";
+      $("utterance").focus();
+    });
+    $("quick-commands").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("button[data-utterance]");
+      if (!btn) return;
+      $("utterance").value = btn.getAttribute("data-utterance");
+    });
+    $("run-all").addEventListener("click", runAll);
+    $("reset-session").addEventListener("click", resetSession);
+    $("confirm-btn").addEventListener("click", () => decide("confirm"));
+    $("deny-btn").addEventListener("click", () => decide("deny"));
+    $("cancel-btn").addEventListener("click", () => decide("cancel"));
+
     const conn = $("conn");
     const es = new EventSource("/events");
     es.onopen = () => { conn.textContent = "live"; conn.className = "conn live"; };
     es.onerror = () => { conn.textContent = "reconnecting…"; conn.className = "conn"; };
     es.onmessage = (ev) => {
-      try { apply(JSON.parse(ev.data)); } catch (e) { console.error(e); }
+      try { applyStatus(JSON.parse(ev.data)); } catch (e) { console.error(e); }
     };
+
+    Promise.all([
+      api("/api/scenarios").then((data) => { scenarios = data; renderScenarios(); }),
+      api("/api/health").then(renderHealth),
+      refreshSession(),
+    ]).catch((err) => console.error(err));
   </script>
 </body>
 </html>

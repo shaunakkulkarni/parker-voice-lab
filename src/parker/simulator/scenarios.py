@@ -72,37 +72,88 @@ def assert_scenario_expectations(
     result: PipelineResult | list[PipelineResult],
 ) -> None:
     """Validate result(s) against scenario expectations (for tests)."""
-    if isinstance(result, list):
+    ok, message = check_scenario_expectations(scenario, result)
+    assert ok, message
+
+
+def check_scenario_expectations(
+    scenario: dict[str, Any],
+    result: PipelineResult | list[PipelineResult],
+) -> tuple[bool, str | None]:
+    """Return (passed, failure_message) for fixture expectations without raising."""
+    try:
+        if isinstance(result, list):
+            if scenario.get("expected_error"):
+                if not any(r.error_code == scenario["expected_error"] for r in result):
+                    return (
+                        False,
+                        f"Expected error {scenario['expected_error']} in "
+                        f"{[r.error_code for r in result]}",
+                    )
+                return True, None
+            last = result[-1]
+            if scenario.get("expected_category"):
+                if last.category is None:
+                    return False, "Expected category but result.category is None"
+                if last.category.value != scenario["expected_category"]:
+                    return (
+                        False,
+                        f"Expected category {scenario['expected_category']!r}, "
+                        f"got {last.category.value!r}",
+                    )
+            return True, None
+
         if scenario.get("expected_error"):
-            assert any(r.error_code == scenario["expected_error"] for r in result), (
-                f"Expected error {scenario['expected_error']} in {[r.error_code for r in result]}"
-            )
-            return
-        last = result[-1]
-        if scenario.get("expected_category"):
-            assert last.category is not None
-            assert last.category.value == scenario["expected_category"]
-        return
+            if result.error_code != scenario["expected_error"]:
+                return (
+                    False,
+                    f"Expected error {scenario['expected_error']!r}, "
+                    f"got {result.error_code!r}",
+                )
+            return True, None
 
-    if scenario.get("expected_error"):
-        assert result.error_code == scenario["expected_error"]
-        return
+        expected_action = scenario.get("expected_action")
+        if expected_action is None:
+            if result.action is not None and scenario.get("expected_category") != "read":
+                return False, f"Expected no action, got {result.action}"
+        else:
+            if result.action is None:
+                return False, "Expected action but result.action is None"
+            if result.action.domain != expected_action["domain"]:
+                return (
+                    False,
+                    f"Expected domain {expected_action['domain']!r}, "
+                    f"got {result.action.domain!r}",
+                )
+            if result.action.service != expected_action["service"]:
+                return (
+                    False,
+                    f"Expected service {expected_action['service']!r}, "
+                    f"got {result.action.service!r}",
+                )
+            if result.action.target_entity != expected_action["entity"]:
+                return (
+                    False,
+                    f"Expected entity {expected_action['entity']!r}, "
+                    f"got {result.action.target_entity!r}",
+                )
 
-    expected_action = scenario.get("expected_action")
-    if expected_action is None:
-        assert result.action is None or scenario.get("expected_category") == "read"
-    else:
-        assert result.action is not None
-        assert result.action.domain == expected_action["domain"]
-        assert result.action.service == expected_action["service"]
-        assert result.action.target_entity == expected_action["entity"]
+        if scenario.get("expected_category") and result.category is not None:
+            if result.category.value != scenario["expected_category"]:
+                return (
+                    False,
+                    f"Expected category {scenario['expected_category']!r}, "
+                    f"got {result.category.value!r}",
+                )
 
-    if scenario.get("expected_category") and result.category is not None:
-        assert result.category.value == scenario["expected_category"]
-
-    if scenario.get("requires_confirmation"):
-        assert result.action is not None
-        assert result.action.requires_confirmation is True
-        if scenario.get("confirmation_response") == "yes":
-            assert result.action_result is not None
-            assert result.action_result.success is True
+        if scenario.get("requires_confirmation"):
+            if result.action is None:
+                return False, "Expected confirmation action but action is None"
+            if result.action.requires_confirmation is not True:
+                return False, "Expected requires_confirmation=True"
+            if scenario.get("confirmation_response") == "yes":
+                if result.action_result is None or result.action_result.success is not True:
+                    return False, "Expected successful confirmed action result"
+        return True, None
+    except Exception as exc:  # noqa: BLE001
+        return False, str(exc)

@@ -40,8 +40,17 @@ class MockHomeAssistant(HomeAssistantAdapter):
         self.areas: dict[str, str] = {}
         self.voice_devices: list[dict[str, Any]] = []
         self._entities: dict[str, DeviceState] = {}
-        path = Path(devices_path) if devices_path else DEFAULT_DEVICES_PATH
-        self._load(path)
+        self._devices_path = Path(devices_path) if devices_path else DEFAULT_DEVICES_PATH
+        self._load(self._devices_path)
+
+    def reset(self) -> None:
+        """Reload fixture defaults and clear call/offline injection state."""
+        self.service_calls.clear()
+        self.offline_entities.clear()
+        self.areas.clear()
+        self.voice_devices.clear()
+        self._entities.clear()
+        self._load(self._devices_path)
 
     def _load(self, path: Path) -> None:
         data = json.loads(path.read_text(encoding="utf-8"))

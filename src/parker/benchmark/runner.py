@@ -92,12 +92,19 @@ class BenchmarkRunner:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="PARKER latency benchmark")
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--realistic",
         action="store_true",
-        help="Use target-like mock latencies (default is zero for speed)",
+        help="Use target-like mock latencies",
+    )
+    mode.add_argument(
+        "--zero-latency",
+        action="store_true",
+        help="Explicit alias for the default zero-latency benchmark",
     )
     args = parser.parse_args()
+    # Default and --zero-latency: deterministic speed. --realistic: target-like mocks.
     runner = BenchmarkRunner(zero_latency=not args.realistic)
     summary = runner.run()
     summary.print()
