@@ -24,7 +24,7 @@ class MockHermes(HermesAdapter):
         self,
         responses_path: Path | str | None = None,
         *,
-        latency_ms: float = 300.0,
+        latency_ms: float = 0.0,
         fail_next: bool = False,
     ) -> None:
         self.latency_ms = latency_ms

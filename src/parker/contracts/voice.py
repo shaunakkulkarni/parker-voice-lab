@@ -1,14 +1,12 @@
 """Voice pipeline contracts: wake events, transcripts, and turns."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-
-def utc_now() -> datetime:
-    return datetime.now(UTC)
+from parker.contracts._time import utc_now
 
 
 class WakeWordSource(StrEnum):

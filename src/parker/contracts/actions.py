@@ -1,15 +1,13 @@
 """Action request, result, and receipt contracts."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-
-def utc_now() -> datetime:
-    return datetime.now(UTC)
+from parker.contracts._time import utc_now
 
 
 class ActionCategory(StrEnum):

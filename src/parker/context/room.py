@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from parker.adapters.mock_ha import MockHomeAssistant
+from parker.adapters.base import HomeAssistantAdapter
 from parker.contracts.actions import ActionRequest
 from parker.contracts.context import DeviceState
 from parker.contracts.errors import AmbiguousDeviceError, DeviceNotFoundError
@@ -11,7 +11,7 @@ from parker.contracts.errors import AmbiguousDeviceError, DeviceNotFoundError
 class RoomResolver:
     """Resolve vague device references using room context."""
 
-    def __init__(self, ha: MockHomeAssistant) -> None:
+    def __init__(self, ha: HomeAssistantAdapter) -> None:
         self._ha = ha
 
     def devices_in_area(self, area_id: str) -> list[DeviceState]:

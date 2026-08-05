@@ -15,6 +15,14 @@ from parker.contracts.errors import ActionExecutionError, DeviceNotFoundError
 
 DEFAULT_DEVICES_PATH = Path(__file__).resolve().parents[3] / "fixtures" / "devices.json"
 
+VALID_SERVICES: dict[str, frozenset[str]] = {
+    "light": frozenset({"turn_on", "turn_off"}),
+    "climate": frozenset({"set_temperature"}),
+    "lock": frozenset({"lock", "unlock"}),
+    "media_player": frozenset({"play_media"}),
+    "switch": frozenset({"turn_on", "turn_off"}),
+}
+
 
 class MockHomeAssistant(HomeAssistantAdapter):
     """In-memory Home Assistant for tests and simulation."""
@@ -23,7 +31,7 @@ class MockHomeAssistant(HomeAssistantAdapter):
         self,
         devices_path: Path | str | None = None,
         *,
-        latency_ms: float = 50.0,
+        latency_ms: float = 0.0,
         offline_entities: set[str] | None = None,
     ) -> None:
         self.latency_ms = latency_ms
@@ -116,6 +124,15 @@ class MockHomeAssistant(HomeAssistantAdapter):
                 f"Domain mismatch for {entity_id}: expected {entity.domain}, got {domain}."
             )
 
+        allowed = VALID_SERVICES.get(domain)
+        if allowed is None:
+            raise ActionExecutionError(f"Unsupported domain: {domain}")
+        if service not in allowed:
+            raise ActionExecutionError(
+                f"Service '{service}' is not valid for domain '{domain}'. "
+                f"Allowed: {sorted(allowed)}"
+            )
+
         now = datetime.now(UTC)
         attrs = deepcopy(entity.attributes)
 
@@ -123,45 +140,22 @@ class MockHomeAssistant(HomeAssistantAdapter):
             if service == "turn_on":
                 entity.state = "on"
                 attrs["brightness"] = payload.get("brightness", attrs.get("brightness") or 255)
-            elif service == "turn_off":
+            else:  # turn_off
                 entity.state = "off"
                 attrs["brightness"] = 0
-            else:
-                raise ActionExecutionError(f"Unsupported light service: {service}")
         elif domain == "climate":
-            if service == "set_temperature":
-                temp = payload.get("temperature")
-                if temp is None:
-                    raise ActionExecutionError("temperature parameter required")
-                attrs["temperature"] = float(temp)
-                entity.state = attrs.get("hvac_mode", entity.state)
-            else:
-                raise ActionExecutionError(f"Unsupported climate service: {service}")
+            temp = payload.get("temperature")
+            if temp is None:
+                raise ActionExecutionError("temperature parameter required")
+            attrs["temperature"] = float(temp)
+            entity.state = attrs.get("hvac_mode", entity.state)
         elif domain == "lock":
-            if service == "lock":
-                entity.state = "locked"
-            elif service == "unlock":
-                entity.state = "unlocked"
-            else:
-                raise ActionExecutionError(f"Unsupported lock service: {service}")
+            entity.state = "locked" if service == "lock" else "unlocked"
         elif domain == "media_player":
-            if service == "play_media":
-                entity.state = "playing"
-                attrs["media_title"] = payload.get("media_content_id", "Music")
-            elif service == "media_stop":
-                entity.state = "idle"
-                attrs["media_title"] = None
-            else:
-                raise ActionExecutionError(f"Unsupported media_player service: {service}")
+            entity.state = "playing"
+            attrs["media_title"] = payload.get("media_content_id", "Music")
         elif domain == "switch":
-            if service == "turn_on":
-                entity.state = "on"
-            elif service == "turn_off":
-                entity.state = "off"
-            else:
-                raise ActionExecutionError(f"Unsupported switch service: {service}")
-        else:
-            raise ActionExecutionError(f"Unsupported domain: {domain}")
+            entity.state = "on" if service == "turn_on" else "off"
 
         entity.attributes = attrs
         entity.last_changed = now
