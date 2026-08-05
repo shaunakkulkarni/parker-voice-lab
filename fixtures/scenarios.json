@@ -1,0 +1,96 @@
+[
+  {
+    "name": "Simple light on",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Turn on the living room light",
+    "expected_action": {
+      "domain": "light",
+      "service": "turn_on",
+      "entity": "light.living_room"
+    },
+    "expected_category": "routine",
+    "requires_confirmation": false
+  },
+  {
+    "name": "Ambiguous light",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Turn on the light",
+    "expected_action": {
+      "domain": "light",
+      "service": "turn_on",
+      "entity": "light.living_room"
+    },
+    "expected_category": "routine",
+    "requires_confirmation": false,
+    "notes": "Should resolve to living room light based on voice device area"
+  },
+  {
+    "name": "Temperature query",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "What's the temperature?",
+    "expected_action": null,
+    "expected_category": "read",
+    "requires_confirmation": false
+  },
+  {
+    "name": "Thermostat change",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Set the thermostat to 24 degrees",
+    "expected_action": {
+      "domain": "climate",
+      "service": "set_temperature",
+      "entity": "climate.living_room"
+    },
+    "expected_category": "routine",
+    "requires_confirmation": false
+  },
+  {
+    "name": "Lock door - requires confirmation",
+    "area_id": "hallway",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Lock the front door",
+    "expected_action": {
+      "domain": "lock",
+      "service": "lock",
+      "entity": "lock.front_door"
+    },
+    "expected_category": "consequential",
+    "requires_confirmation": true,
+    "confirmation_response": "yes"
+  },
+  {
+    "name": "Two-turn conversation",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "turns": [
+      {"utterance": "What's the temperature?"},
+      {"utterance": "And tomorrow?"}
+    ],
+    "expected_category": "read",
+    "notes": "Second turn should use conversation context to understand 'tomorrow' refers to weather/temperature"
+  },
+  {
+    "name": "Context expiry",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "turns": [
+      {"utterance": "Turn on the light"},
+      {"wait_seconds": 130},
+      {"utterance": "And the kitchen?"}
+    ],
+    "expected_error": "context_expired",
+    "notes": "Context should expire after 120 seconds, second turn should fail gracefully"
+  },
+  {
+    "name": "Device not found",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Turn on the garage light",
+    "expected_error": "device_not_found",
+    "notes": "Should produce a spoken error, not crash"
+  }
+]
