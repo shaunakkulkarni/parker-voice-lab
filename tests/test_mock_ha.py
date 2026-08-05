@@ -94,3 +94,13 @@ def test_service_call_tracking(ha: MockHomeAssistant) -> None:
     assert len(ha.service_calls) == 1
     assert ha.service_calls[0]["domain"] == "switch"
     _ = uuid4()  # keep import used for future turn-id wiring
+
+
+def test_invalid_service_for_domain(ha: MockHomeAssistant) -> None:
+    with pytest.raises(ActionExecutionError) as exc:
+        ha.call_service("light", "set_temperature", entity_id="light.living_room")
+    assert "not valid" in exc.value.message
+
+    with pytest.raises(ActionExecutionError) as exc:
+        ha.call_service("media_player", "media_stop", entity_id="media_player.living_room_homepod")
+    assert "not valid" in exc.value.message

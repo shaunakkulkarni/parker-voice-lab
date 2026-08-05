@@ -152,3 +152,15 @@ def test_latency_reported(pipeline: VoicePipeline) -> None:
     assert result.latency is not None
     assert result.latency.total_ms >= 0
     assert result.turn.total_ms is not None
+
+
+def test_scenario_requires_turns_or_utterance(pipeline: VoicePipeline) -> None:
+    with pytest.raises(ValueError, match="turns|utterance"):
+        run_scenario(
+            pipeline,
+            {
+                "name": "broken",
+                "area_id": "living_room",
+                "device_id": "voice_pe_living_room",
+            },
+        )

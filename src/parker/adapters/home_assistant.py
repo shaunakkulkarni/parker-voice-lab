@@ -22,6 +22,9 @@ class HomeAssistant(HomeAssistantAdapter):
     def list_states(self) -> list[DeviceState]:
         raise NotImplementedError("Real Home Assistant adapter is not enabled yet.")
 
+    def entities_in_area(self, area_id: str) -> list[DeviceState]:
+        raise NotImplementedError("Real Home Assistant adapter is not enabled yet.")
+
     def call_service(
         self,
         domain: str,

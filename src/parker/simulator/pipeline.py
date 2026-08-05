@@ -82,9 +82,9 @@ class VoicePipeline:
     _approval: ApprovalMiddleware | None = field(default=None, init=False, repr=False)
 
     def __post_init__(self) -> None:
+        self._room = RoomResolver(self.ha_adapter)
         if isinstance(self.ha_adapter, MockHomeAssistant):
             self.ha_adapter.latency_ms = self.ha_latency_ms
-            self._room = RoomResolver(self.ha_adapter)
         if isinstance(self.hermes_adapter, MockHermes):
             self.hermes_adapter.latency_ms = self.hermes_latency_ms
         store = self.receipt_store or ReceiptStore()
@@ -95,8 +95,7 @@ class VoicePipeline:
 
     @property
     def room(self) -> RoomResolver:
-        if self._room is None:
-            raise PARKERError("Room resolver requires MockHomeAssistant")
+        assert self._room is not None
         return self._room
 
     @property

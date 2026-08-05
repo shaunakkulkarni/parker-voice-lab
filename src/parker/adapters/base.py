@@ -40,6 +40,10 @@ class HomeAssistantAdapter(ABC):
         """GET /api/states."""
 
     @abstractmethod
+    def entities_in_area(self, area_id: str) -> list[DeviceState]:
+        """Return entities belonging to a Home Assistant area."""
+
+    @abstractmethod
     def call_service(
         self,
         domain: str,

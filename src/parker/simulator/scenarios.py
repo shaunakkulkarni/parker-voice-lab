@@ -24,6 +24,12 @@ def run_scenario(
     pipeline: VoicePipeline, scenario: dict[str, Any]
 ) -> PipelineResult | list[PipelineResult]:
     """Execute a scenario; multi-turn scenarios return a list of results."""
+    if "turns" not in scenario and "utterance" not in scenario:
+        raise ValueError(
+            f"Scenario {scenario.get('name', '<unnamed>')!r} must have "
+            "either 'turns' or 'utterance'"
+        )
+
     area_id = scenario["area_id"]
     device_id = scenario["device_id"]
     name = scenario.get("name", "unnamed")

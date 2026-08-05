@@ -7,12 +7,9 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
+from parker.contracts._time import utc_now
 from parker.contracts.actions import ActionRequest
 from parker.contracts.voice import VoiceTurn
-
-
-def utc_now() -> datetime:
-    return datetime.now(UTC)
 
 
 class DeviceState(BaseModel):
