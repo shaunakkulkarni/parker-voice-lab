@@ -1,0 +1,161 @@
+{
+  "patterns": [
+    {
+      "match": "turn on the living room light",
+      "intent": "turn_on_light",
+      "domain": "light",
+      "service": "turn_on",
+      "entity": "light.living_room",
+      "area_id": "living_room",
+      "category": "routine",
+      "requires_confirmation": false,
+      "spoken": "Turning on the living room light."
+    },
+    {
+      "match": "turn off the kitchen light",
+      "intent": "turn_off_light",
+      "domain": "light",
+      "service": "turn_off",
+      "entity": "light.kitchen",
+      "area_id": "kitchen",
+      "category": "routine",
+      "requires_confirmation": false,
+      "spoken": "Turning off the kitchen light."
+    },
+    {
+      "match": "what's the temperature",
+      "intent": "read_temperature",
+      "domain": "climate",
+      "service": "get_temperature",
+      "entity": null,
+      "category": "read",
+      "requires_confirmation": false,
+      "spoken": "The current temperature is {temperature} degrees.",
+      "topic": "temperature"
+    },
+    {
+      "match": "what is the temperature",
+      "intent": "read_temperature",
+      "domain": "climate",
+      "service": "get_temperature",
+      "entity": null,
+      "category": "read",
+      "requires_confirmation": false,
+      "spoken": "The current temperature is {temperature} degrees.",
+      "topic": "temperature"
+    },
+    {
+      "match": "set the thermostat to",
+      "intent": "set_temperature",
+      "domain": "climate",
+      "service": "set_temperature",
+      "entity": null,
+      "category": "routine",
+      "requires_confirmation": false,
+      "spoken": "Setting the thermostat to {temperature} degrees."
+    },
+    {
+      "match": "lock the front door",
+      "intent": "lock_door",
+      "domain": "lock",
+      "service": "lock",
+      "entity": "lock.front_door",
+      "area_id": "hallway",
+      "category": "consequential",
+      "requires_confirmation": true,
+      "spoken": "Should I lock the front door?"
+    },
+    {
+      "match": "unlock the front door",
+      "intent": "unlock_door",
+      "domain": "lock",
+      "service": "unlock",
+      "entity": "lock.front_door",
+      "area_id": "hallway",
+      "category": "consequential",
+      "requires_confirmation": true,
+      "spoken": "Should I unlock the front door?"
+    },
+    {
+      "match": "what time is it",
+      "intent": "tell_time",
+      "domain": null,
+      "service": null,
+      "entity": null,
+      "category": "read",
+      "requires_confirmation": false,
+      "spoken": "It is {time}."
+    },
+    {
+      "match": "play some music",
+      "intent": "play_music",
+      "domain": "media_player",
+      "service": "play_media",
+      "entity": "media_player.living_room_homepod",
+      "area_id": "living_room",
+      "category": "routine",
+      "requires_confirmation": false,
+      "spoken": "Playing music on the HomePod."
+    },
+    {
+      "match": "turn on the kitchen light",
+      "intent": "turn_on_light",
+      "domain": "light",
+      "service": "turn_on",
+      "entity": "light.kitchen",
+      "area_id": "kitchen",
+      "category": "routine",
+      "requires_confirmation": false,
+      "spoken": "Turning on the kitchen light."
+    },
+    {
+      "match": "turn on the garage light",
+      "intent": "turn_on_light",
+      "error": "device_not_found",
+      "spoken": "I couldn't find a garage light."
+    },
+    {
+      "match": "turn on the light",
+      "intent": "turn_on_light",
+      "domain": "light",
+      "service": "turn_on",
+      "entity": null,
+      "resolve_room_light": true,
+      "category": "routine",
+      "requires_confirmation": false,
+      "spoken": "Turning on the light."
+    },
+    {
+      "match": "and tomorrow",
+      "intent": "follow_up",
+      "category": "read",
+      "requires_confirmation": false,
+      "spoken": "I don't have tomorrow's forecast yet, but today it is {temperature} degrees.",
+      "follow_up": true
+    },
+    {
+      "match": "cancel",
+      "intent": "cancel",
+      "category": "read",
+      "requires_confirmation": false,
+      "spoken": "Okay, cancelled.",
+      "cancel": true
+    },
+    {
+      "match": "yes",
+      "intent": "confirm",
+      "category": "read",
+      "requires_confirmation": false,
+      "spoken": "Confirmed.",
+      "confirm": true
+    },
+    {
+      "match": "no",
+      "intent": "deny",
+      "category": "read",
+      "requires_confirmation": false,
+      "spoken": "Okay, I won't do that.",
+      "deny": true
+    }
+  ]
+}

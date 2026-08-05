@@ -1,0 +1,71 @@
+{
+  "devices": [
+    {
+      "entity_id": "light.living_room",
+      "friendly_name": "Living Room Light",
+      "area_id": "living_room",
+      "state": "off",
+      "attributes": {"brightness": 0, "color_temp": 4000}
+    },
+    {
+      "entity_id": "light.bedroom",
+      "friendly_name": "Bedroom Light",
+      "area_id": "bedroom",
+      "state": "off",
+      "attributes": {"brightness": 0, "color_temp": 4000}
+    },
+    {
+      "entity_id": "light.kitchen",
+      "friendly_name": "Kitchen Light",
+      "area_id": "kitchen",
+      "state": "on",
+      "attributes": {"brightness": 200, "color_temp": 3500}
+    },
+    {
+      "entity_id": "climate.living_room",
+      "friendly_name": "Living Room Thermostat",
+      "area_id": "living_room",
+      "state": "heating",
+      "attributes": {
+        "temperature": 22.0,
+        "current_temperature": 21.5,
+        "hvac_mode": "heat"
+      }
+    },
+    {
+      "entity_id": "media_player.living_room_homepod",
+      "friendly_name": "Living Room HomePod",
+      "area_id": "living_room",
+      "state": "idle",
+      "attributes": {"volume_level": 0.4, "media_title": null}
+    },
+    {
+      "entity_id": "lock.front_door",
+      "friendly_name": "Front Door Lock",
+      "area_id": "hallway",
+      "state": "locked",
+      "attributes": {}
+    },
+    {
+      "entity_id": "switch.coffee_maker",
+      "friendly_name": "Coffee Maker",
+      "area_id": "kitchen",
+      "state": "off",
+      "attributes": {}
+    }
+  ],
+  "areas": [
+    {"area_id": "living_room", "name": "Living Room"},
+    {"area_id": "bedroom", "name": "Bedroom"},
+    {"area_id": "kitchen", "name": "Kitchen"},
+    {"area_id": "hallway", "name": "Hallway"}
+  ],
+  "voice_devices": [
+    {
+      "device_id": "voice_pe_living_room",
+      "name": "Living Room Voice PE",
+      "area_id": "living_room",
+      "wake_word": "okay_nabu"
+    }
+  ]
+}

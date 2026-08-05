@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PARKER</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --fg: #e7ecf1;
+      --muted: #8b9aab;
+      --accent: #3d9cf0;
+      --warn: #e0a106;
+      --err: #e85d5d;
+      --ok: #3ecf8e;
+      --panel: #1a222c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #1b2a3a 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #243044 0%, transparent 50%),
+        var(--bg);
+      color: var(--fg);
+      padding: 2rem;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-family: "IBM Plex Mono", "SF Mono", monospace;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      font-size: 1.4rem;
+      margin: 0;
+    }
+    .conn {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .conn.live { color: var(--ok); }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    section {
+      background: color-mix(in srgb, var(--panel) 88%, transparent);
+      border: 1px solid #2a3542;
+      border-radius: 12px;
+      padding: 1.25rem 1.4rem;
+    }
+    .label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    .value {
+      font-size: 1.35rem;
+      font-weight: 500;
+      word-break: break-word;
+    }
+    .state {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 2rem;
+      color: var(--accent);
+    }
+    .state.confirming { color: var(--warn); }
+    .state.error { color: var(--err); }
+    .stack { display: grid; gap: 1rem; }
+    #errors:empty::after { content: "None"; color: var(--muted); }
+    #errors li { margin-bottom: 0.25rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PARKER</h1>
+    <div id="conn" class="conn">connecting…</div>
+  </header>
+  <div class="grid">
+    <section class="stack">
+      <div>
+        <div class="label">State</div>
+        <div id="state" class="state">idle</div>
+      </div>
+      <div>
+        <div class="label">Last transcript</div>
+        <div id="transcript" class="value">—</div>
+      </div>
+      <div>
+        <div class="label">Last response</div>
+        <div id="response" class="value">—</div>
+      </div>
+    </section>
+    <section class="stack">
+      <div>
+        <div class="label">Room / device</div>
+        <div id="room" class="value">—</div>
+      </div>
+      <div>
+        <div class="label">Pending confirmation</div>
+        <div id="pending" class="value">—</div>
+      </div>
+      <div>
+        <div class="label">Active conversations</div>
+        <div id="conversations" class="value">0</div>
+      </div>
+      <div>
+        <div class="label">Uptime</div>
+        <div id="uptime" class="value">0s</div>
+      </div>
+      <div>
+        <div class="label">Errors</div>
+        <ul id="errors" class="value" style="padding-left:1.1rem;margin:0;font-size:1rem;"></ul>
+      </div>
+    </section>
+  </div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    function fmt(v) { return (v === null || v === undefined || v === "") ? "—" : String(v); }
+    function apply(status) {
+      const stateEl = $("state");
+      stateEl.textContent = status.state || "idle";
+      stateEl.className = "state " + (status.state || "");
+      $("transcript").textContent = fmt(status.last_transcript);
+      $("response").textContent = fmt(status.last_response);
+      const room = status.current_room || "—";
+      const device = status.current_device || "—";
+      $("room").textContent = room + " / " + device;
+      if (status.pending_confirmation) {
+        const a = status.pending_confirmation;
+        $("pending").textContent = `${a.domain}.${a.service} → ${a.target_entity || "?"}`;
+      } else {
+        $("pending").textContent = "—";
+      }
+      $("conversations").textContent = String(status.active_conversations ?? 0);
+      $("uptime").textContent = Math.round(status.uptime_seconds || 0) + "s";
+      const errors = $("errors");
+      errors.innerHTML = "";
+      (status.errors || []).slice(-5).forEach((e) => {
+        const li = document.createElement("li");
+        li.textContent = e;
+        errors.appendChild(li);
+      });
+    }
+    const conn = $("conn");
+    const es = new EventSource("/events");
+    es.onopen = () => { conn.textContent = "live"; conn.className = "conn live"; };
+    es.onerror = () => { conn.textContent = "reconnecting…"; conn.className = "conn"; };
+    es.onmessage = (ev) => {
+      try { apply(JSON.parse(ev.data)); } catch (e) { console.error(e); }
+    };
+  </script>
+</body>
+</html>
