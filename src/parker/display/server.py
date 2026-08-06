@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import queue
+import socket
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -302,9 +303,23 @@ class DisplayServer:
                 pass
             self._demo_stop.wait(2.0)
 
-    def serve_forever(self) -> None:
+    def bind(self) -> int:
+        """Bind the listening socket and return the actual port.
+
+        Safe to call before ``serve_forever`` so callers (especially tests) can
+        catch bind failures in the foreground thread. When ``port`` is 0, the
+        OS assigns an ephemeral port and ``self.port`` is updated.
+        """
+        if self._httpd is not None:
+            return self.port
         handler = self.make_handler()
         self._httpd = ThreadingHTTPServer((self.host, self.port), handler)
+        self.port = int(self._httpd.server_address[1])
+        return self.port
+
+    def serve_forever(self) -> None:
+        self.bind()
+        assert self._httpd is not None
         mode = "DEMO" if self.demo else "IDLE"
         print(
             f"PARKER Test Console at http://{self.host}:{self.port} "
@@ -323,10 +338,26 @@ class DisplayServer:
             self._httpd.server_close()
 
     def start_background(self) -> threading.Thread:
+        """Bind, then serve in a daemon thread; wait until /status responds."""
+        self.bind()
         thread = threading.Thread(target=self.serve_forever, daemon=True)
         thread.start()
-        time.sleep(0.05)
-        return thread
+        deadline = time.monotonic() + 2.0
+        while time.monotonic() < deadline:
+            if not thread.is_alive():
+                raise RuntimeError("DisplayServer failed to start")
+            try:
+                with socket.create_connection((self.host, self.port), timeout=0.2) as sock:
+                    sock.sendall(
+                        b"GET /status HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+                    )
+                    data = sock.recv(64)
+                    if data.startswith(b"HTTP/1.0 200") or data.startswith(b"HTTP/1.1 200"):
+                        return thread
+            except OSError:
+                pass
+            time.sleep(0.01)
+        raise TimeoutError("DisplayServer did not become ready before timeout")
 
 
 def main() -> None:

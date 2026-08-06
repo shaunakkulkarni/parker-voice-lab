@@ -12,7 +12,6 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-from parker.adapters.base import HermesAdapter, HomeAssistantAdapter
 from parker.adapters.mock_ha import MockHomeAssistant
 from parker.adapters.mock_hermes import MockHermes
 from parker.context.conversation import ConversationManager
@@ -57,6 +56,12 @@ class ConsoleNotFoundError(LookupError):
     """Raised when a named scenario does not exist."""
 
     code = "not_found"
+
+
+class ConsoleAdapterError(TypeError):
+    """Raised when a non-mock adapter is injected into the Test Console."""
+
+    code = "mock_only"
 
 
 class RunType(StrEnum):
@@ -259,10 +264,20 @@ class ConsoleController:
         receipt_path: Path | str | None = None,
         latency_path: Path | str | None = None,
         state_machine: StateMachine | None = None,
-        ha_adapter: HomeAssistantAdapter | None = None,
-        hermes_adapter: HermesAdapter | None = None,
+        ha_adapter: MockHomeAssistant | None = None,
+        hermes_adapter: MockHermes | None = None,
         devices_path: Path | str | None = None,
     ) -> None:
+        if ha_adapter is not None and not isinstance(ha_adapter, MockHomeAssistant):
+            raise ConsoleAdapterError(
+                "ConsoleController accepts only MockHomeAssistant; "
+                "the Test Console is mock-only and rejects live adapters"
+            )
+        if hermes_adapter is not None and not isinstance(hermes_adapter, MockHermes):
+            raise ConsoleAdapterError(
+                "ConsoleController accepts only MockHermes; "
+                "the Test Console is mock-only and rejects live adapters"
+            )
         root = Path(__file__).resolve().parents[3]
         self._receipt_path = (
             Path(receipt_path) if receipt_path else root / "data" / "receipts.jsonl"
@@ -286,7 +301,7 @@ class ConsoleController:
     def ha(self) -> MockHomeAssistant:
         adapter = self.pipeline.ha_adapter
         if not isinstance(adapter, MockHomeAssistant):
-            raise TypeError("ConsoleController requires MockHomeAssistant")
+            raise ConsoleAdapterError("ConsoleController requires MockHomeAssistant")
         return adapter
 
     @property
@@ -295,15 +310,15 @@ class ConsoleController:
 
     def _build_pipeline(self, *, reset_ha: bool = False) -> None:
         if self._external_ha is not None:
-            ha: HomeAssistantAdapter = self._external_ha
-            if reset_ha and isinstance(ha, MockHomeAssistant):
+            ha = self._external_ha
+            if reset_ha:
                 ha.reset()
         else:
             ha = MockHomeAssistant(
                 self._devices_path,
                 latency_ms=0.0,
             )
-        hermes: HermesAdapter = self._external_hermes or MockHermes(latency_ms=0.0)
+        hermes = self._external_hermes or MockHermes(latency_ms=0.0)
         store = ReceiptStore(self._receipt_path)
         self.pipeline = VoicePipeline(
             ha_adapter=ha,

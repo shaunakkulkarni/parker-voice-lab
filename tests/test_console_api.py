@@ -3,41 +3,10 @@
 from __future__ import annotations
 
 import json
-import threading
-import time
 from http.client import HTTPConnection
-from pathlib import Path
 
-import pytest
-
-from parker.context.state import StateMachine
-from parker.display.console import ConsoleController
 from parker.display.server import DisplayServer
 from parker.simulator.scenarios import load_scenarios
-
-
-@pytest.fixture
-def api_server(tmp_path: Path) -> tuple[DisplayServer, int]:
-    port = 18790
-    state = StateMachine()
-    console = ConsoleController(
-        receipt_path=tmp_path / "receipts.jsonl",
-        latency_path=tmp_path / "benchmarks.jsonl",
-        state_machine=state,
-    )
-    server = DisplayServer(
-        state,
-        host="127.0.0.1",
-        port=port,
-        console=console,
-        demo=False,
-    )
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    time.sleep(0.1)
-    yield server, port
-    if server._httpd is not None:  # noqa: SLF001
-        server._httpd.shutdown()
 
 
 def _request(

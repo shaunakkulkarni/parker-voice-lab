@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 import json
-import threading
-import time
 from http.client import HTTPConnection
 from pathlib import Path
 
 from parker.context.state import StateMachine
 from parker.display.console import ConsoleController
-from parker.display.server import DisplayServer
+from tests.server_helpers import running_display_server
 
 DISPLAY_HTML = Path(__file__).resolve().parents[1] / "display" / "index.html"
 
@@ -60,19 +58,9 @@ def test_js_can_parse_session_payload_shape(tmp_path: Path) -> None:
 
 
 def test_served_html_includes_console_markup() -> None:
-    port = 18791
     state = StateMachine()
-    server = DisplayServer(
-        state,
-        host="127.0.0.1",
-        port=port,
-        console=ConsoleController(state_machine=state),
-        demo=False,
-    )
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    time.sleep(0.1)
-    try:
+    console = ConsoleController(state_machine=state)
+    with running_display_server(state_machine=state, console=console) as (_, port, _):
         conn = HTTPConnection("127.0.0.1", port, timeout=3)
         conn.request("GET", "/")
         resp = conn.getresponse()
@@ -82,6 +70,3 @@ def test_served_html_includes_console_markup() -> None:
         assert 'id="command-form"' in html
         assert 'id="run-all"' in html
         assert "No action receipt in this session." in html
-    finally:
-        if server._httpd is not None:  # noqa: SLF001
-            server._httpd.shutdown()

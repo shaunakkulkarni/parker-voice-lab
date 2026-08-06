@@ -5,16 +5,58 @@ from __future__ import annotations
 import threading
 import time
 from pathlib import Path
+from typing import Any
+from uuid import UUID
 
 import pytest
 
+from parker.adapters.base import HermesAdapter, HermesResponse, HomeAssistantAdapter
 from parker.adapters.mock_ha import MockHomeAssistant
+from parker.adapters.mock_hermes import MockHermes
+from parker.contracts.context import ConversationContext, DeviceState
 from parker.display.console import (
+    ConsoleAdapterError,
     ConsoleBusyError,
     ConsoleConfirmationError,
     ConsoleController,
 )
 from parker.simulator.scenarios import load_scenarios
+
+
+class _LiveHomeAssistant(HomeAssistantAdapter):
+    """Stand-in for a non-mock HA adapter; must be rejected by the console."""
+
+    def get_state(self, entity_id: str) -> DeviceState:
+        raise NotImplementedError
+
+    def list_states(self) -> list[DeviceState]:
+        return []
+
+    def entities_in_area(self, area_id: str) -> list[DeviceState]:
+        return []
+
+    def call_service(
+        self,
+        domain: str,
+        service: str,
+        *,
+        entity_id: str | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> DeviceState | None:
+        return None
+
+
+class _LiveHermes(HermesAdapter):
+    """Stand-in for a non-mock Hermes adapter; must be rejected by the console."""
+
+    def reason(
+        self,
+        utterance: str,
+        conversation: ConversationContext,
+        *,
+        voice_turn_id: UUID,
+    ) -> HermesResponse:
+        raise NotImplementedError
 
 
 @pytest.fixture
@@ -248,6 +290,42 @@ def test_health_snapshot_is_mock_only(console: ConsoleController) -> None:
     assert health.stt == "simulated"
     assert health.tts == "simulated"
     assert health.voice_preview_edition == "not_connected"
+    assert health.live_device_actions is False
+    assert isinstance(console.pipeline.ha_adapter, MockHomeAssistant)
+    assert isinstance(console.pipeline.hermes_adapter, MockHermes)
+
+
+def test_rejects_non_mock_home_assistant(tmp_path: Path) -> None:
+    with pytest.raises(ConsoleAdapterError, match="MockHomeAssistant"):
+        ConsoleController(
+            receipt_path=tmp_path / "receipts.jsonl",
+            ha_adapter=_LiveHomeAssistant(),  # type: ignore[arg-type]
+        )
+
+
+def test_rejects_non_mock_hermes(tmp_path: Path) -> None:
+    with pytest.raises(ConsoleAdapterError, match="MockHermes"):
+        ConsoleController(
+            receipt_path=tmp_path / "receipts.jsonl",
+            hermes_adapter=_LiveHermes(),  # type: ignore[arg-type]
+        )
+
+
+def test_mock_home_assistant_injection_supports_offline(tmp_path: Path) -> None:
+    """Regression: MockHomeAssistant injection remains valid for offline tests."""
+    ha = MockHomeAssistant(offline_entities={"light.living_room"})
+    console = ConsoleController(
+        receipt_path=tmp_path / "receipts.jsonl",
+        ha_adapter=ha,
+    )
+    run = console.run_command(
+        "Turn on the living room light",
+        area_id="living_room",
+        device_id="voice_pe_living_room",
+    )
+    assert run.error_code == "service_unavailable"
+    health = console.health()
+    assert health.mode == "mock"
     assert health.live_device_actions is False
 
 
