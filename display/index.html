@@ -237,6 +237,7 @@
             <option value="bedroom">bedroom</option>
             <option value="kitchen">kitchen</option>
             <option value="hallway">hallway</option>
+            <option value="bathroom">bathroom</option>
           </select>
         </label>
         <label for="device_id">Voice device
@@ -301,8 +302,12 @@
         <div id="confirm-prompt" class="value">—</div>
       </div>
       <div>
-        <div class="label">Category</div>
+        <div class="label">Category / risk</div>
         <div id="confirm-category" class="value">—</div>
+      </div>
+      <div>
+        <div class="label">Authority</div>
+        <div id="confirm-authority" class="value">pending user voice</div>
       </div>
       <div>
         <div class="label">Service</div>
@@ -323,6 +328,30 @@
       </div>
     </section>
 
+    <section id="plan-panel" class="stack">
+      <h2>Proposed plan</h2>
+      <div>
+        <div class="label">Journey</div>
+        <div id="plan-journey" class="value">—</div>
+      </div>
+      <div>
+        <div class="label">Risk class</div>
+        <div id="plan-risk" class="value">—</div>
+      </div>
+      <div>
+        <div class="label">Capability</div>
+        <div id="plan-capability" class="value">—</div>
+      </div>
+      <ul id="plan-steps" class="value" style="padding-left:1.1rem;margin:0.5rem 0 0;font-size:0.95rem;"></ul>
+      <p id="plan-empty" class="muted">No multi-step plan in the last run.</p>
+    </section>
+
+    <section id="journeys-panel" class="stack">
+      <h2>Journeys</h2>
+      <ul id="journey-list" class="value" style="padding-left:1.1rem;margin:0;font-size:0.95rem;"></ul>
+      <p class="muted" style="margin-top:0.6rem;">New: Run my systems · Delegate the routine · Watch the home</p>
+    </section>
+
     <section id="scenario-runner" class="stack full">
       <h2>Scenario runner</h2>
       <div class="row" style="margin-bottom:0.75rem;">
@@ -334,6 +363,7 @@
           <thead>
             <tr>
               <th>Scenario</th>
+              <th>Journey</th>
               <th>Expected</th>
               <th>Last result</th>
               <th></th>
@@ -400,12 +430,58 @@
     function expectedText(scenario) {
       if (scenario.expected_error) return "error: " + scenario.expected_error;
       if (scenario.requires_confirmation) return "confirmation required";
+      if (scenario.expected_actions && scenario.expected_actions.length) {
+        return scenario.expected_actions.map((a) =>
+          a.domain + "." + a.service + (a.target || a.entity ? (" → " + (a.target || a.entity)) : "")
+        ).join("; ");
+      }
       if (scenario.expected_action) {
         const a = scenario.expected_action;
         return a.domain + "." + a.service + " → " + a.entity;
       }
       if (scenario.expected_category) return "category: " + scenario.expected_category;
       return "—";
+    }
+
+    function journeyLabel(journey) {
+      if (!journey) return "—";
+      return String(journey).replaceAll("_", " ");
+    }
+
+    function renderPlan(run) {
+      const empty = $("plan-empty");
+      const list = $("plan-steps");
+      list.textContent = "";
+      $("plan-journey").textContent = journeyLabel(run && run.journey);
+      $("plan-risk").textContent = fmt(run && run.risk_class);
+      if (!run || !run.plan) {
+        $("plan-capability").textContent = "—";
+        empty.hidden = false;
+        return;
+      }
+      empty.hidden = true;
+      $("plan-capability").textContent = fmt(run.plan.capability);
+      (run.plan.steps || []).forEach((step, idx) => {
+        const li = document.createElement("li");
+        li.textContent =
+          (idx + 1) + ". " + step.domain + "." + step.service +
+          (step.target_entity ? (" → " + step.target_entity) : "") +
+          " [" + step.category + " / " + step.gate_policy + " / " + step.status + "]";
+        list.appendChild(li);
+      });
+    }
+
+    function renderJourneys(scenarioList) {
+      const list = $("journey-list");
+      list.textContent = "";
+      const names = new Set();
+      (scenarioList || []).forEach((s) => { if (s.journey) names.add(s.journey); });
+      ["run_my_systems", "delegate_the_routine", "watch_the_home"].forEach((j) => names.add(j));
+      Array.from(names).sort().forEach((name) => {
+        const li = document.createElement("li");
+        li.textContent = journeyLabel(name);
+        list.appendChild(li);
+      });
     }
 
     function applyStatus(status) {
@@ -523,6 +599,8 @@
         const tr = document.createElement("tr");
         const nameTd = document.createElement("td");
         nameTd.textContent = scenario.name;
+        const journeyTd = document.createElement("td");
+        journeyTd.textContent = journeyLabel(scenario.journey);
         const expectedTd = document.createElement("td");
         expectedTd.textContent = expectedText(scenario);
         const resultTd = document.createElement("td");
@@ -540,11 +618,13 @@
         btn.addEventListener("click", () => runScenario(scenario.name));
         actionTd.appendChild(btn);
         tr.appendChild(nameTd);
+        tr.appendChild(journeyTd);
         tr.appendChild(expectedTd);
         tr.appendChild(resultTd);
         tr.appendChild(actionTd);
         body.appendChild(tr);
       });
+      renderJourneys(scenarios);
     }
 
     function applySession(session) {
@@ -566,11 +646,13 @@
           wrap.appendChild(document.createTextNode(" " + last.utterance));
         }
         renderTrace(last.latency_trace);
+        renderPlan(last);
         renderReceipt(last.receipt || (session.recent_receipts || []).slice(-1)[0] || null);
         renderScenarios();
       } else {
         $("last-result").textContent = "—";
         renderTrace(null);
+        renderPlan(null);
         renderReceipt((session.recent_receipts || []).slice(-1)[0] || null);
       }
       setBusy(!!session.is_busy);

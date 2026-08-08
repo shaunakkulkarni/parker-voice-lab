@@ -172,6 +172,18 @@ class MockHermes(HermesAdapter):
         if "{temperature}" in spoken:
             spoken = spoken.replace("{temperature}", "21.5")
 
+        plan_intent = pattern.get("plan_intent")
+        plan_parameters = dict(pattern.get("plan_parameters") or {})
+        # Fill topic from utterance for research patterns
+        if plan_intent == "research" and "topic" not in plan_parameters:
+            plan_parameters["topic"] = text
+        if plan_intent == "travel_prep" and "destination" not in plan_parameters:
+            for marker in ("trip to ", "for my trip to ", "prepare me for "):
+                if marker in text:
+                    plan_parameters["destination"] = text.split(marker, 1)[1].strip()
+                    break
+            plan_parameters.setdefault("destination", text)
+
         return HermesResponse(
             intent=pattern.get("intent", "unknown"),
             spoken=spoken,
@@ -182,4 +194,6 @@ class MockHermes(HermesAdapter):
             topic=pattern.get("topic"),
             resolve_room_light=resolve_room_light,
             parameters=params,
+            plan_intent=plan_intent,
+            plan_parameters=plan_parameters,
         )

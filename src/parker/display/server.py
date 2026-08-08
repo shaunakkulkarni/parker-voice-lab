@@ -110,6 +110,8 @@ class DisplayServer:
                         s.model_dump(mode="json") for s in server.console.list_scenarios()
                     ]
                     self._json_response(200, scenarios)
+                elif path == "/api/journeys":
+                    self._json_response(200, {"journeys": server.console.list_journeys()})
                 elif path.startswith("/api/"):
                     self._api_error(404, "not_found", "Unknown route")
                 else:

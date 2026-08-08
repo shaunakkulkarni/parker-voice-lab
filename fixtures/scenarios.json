@@ -1,6 +1,7 @@
 [
   {
     "name": "Simple light on",
+    "journey": "run_the_room",
     "area_id": "living_room",
     "device_id": "voice_pe_living_room",
     "utterance": "Turn on the living room light",
@@ -14,6 +15,7 @@
   },
   {
     "name": "Ambiguous light",
+    "journey": "run_the_room",
     "area_id": "living_room",
     "device_id": "voice_pe_living_room",
     "utterance": "Turn on the light",
@@ -28,6 +30,7 @@
   },
   {
     "name": "Temperature query",
+    "journey": "run_the_room",
     "area_id": "living_room",
     "device_id": "voice_pe_living_room",
     "utterance": "What's the temperature?",
@@ -37,6 +40,7 @@
   },
   {
     "name": "Thermostat change",
+    "journey": "run_the_room",
     "area_id": "living_room",
     "device_id": "voice_pe_living_room",
     "utterance": "Set the thermostat to 24 degrees",
@@ -50,6 +54,7 @@
   },
   {
     "name": "Lock door - requires confirmation",
+    "journey": "act_on_my_behalf",
     "area_id": "hallway",
     "device_id": "voice_pe_living_room",
     "utterance": "Lock the front door",
@@ -64,6 +69,7 @@
   },
   {
     "name": "Two-turn conversation",
+    "journey": "run_the_room",
     "area_id": "living_room",
     "device_id": "voice_pe_living_room",
     "turns": [
@@ -75,6 +81,7 @@
   },
   {
     "name": "Context expiry",
+    "journey": "notice_and_recover",
     "area_id": "living_room",
     "device_id": "voice_pe_living_room",
     "turns": [
@@ -87,10 +94,288 @@
   },
   {
     "name": "Device not found",
+    "journey": "notice_and_recover",
     "area_id": "living_room",
     "device_id": "voice_pe_living_room",
     "utterance": "Turn on the garage light",
     "expected_error": "device_not_found",
     "notes": "Should produce a spoken error, not crash"
+  },
+  {
+    "name": "shower_routine_readout_and_playlist",
+    "journey": "delegate_the_routine",
+    "area_id": "bathroom",
+    "device_id": "voice_pe_living_room",
+    "trigger": {
+      "type": "presence",
+      "event": "shower_start",
+      "zone": "bathroom_shower"
+    },
+    "context": {
+      "quiet_hours": false,
+      "guest_mode": false
+    },
+    "expected_category": "routine",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "announce", "service": "speak_readout"},
+      {
+        "domain": "media_player",
+        "service": "play_media",
+        "target": "media_player.bathroom_homepod"
+      }
+    ],
+    "expected_spoken_contains": ["Weather", "calendar", "Playing"],
+    "expected_receipt": {"recorded": true, "count": 2}
+  },
+  {
+    "name": "shower_routine_quiet_hours_queued",
+    "journey": "delegate_the_routine",
+    "area_id": "bathroom",
+    "device_id": "voice_pe_living_room",
+    "trigger": {
+      "type": "presence",
+      "event": "shower_start",
+      "zone": "bathroom_shower"
+    },
+    "context": {
+      "quiet_hours": true,
+      "guest_mode": false
+    },
+    "expected_category": "routine",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "announce", "service": "queue_readout"},
+      {
+        "domain": "media_player",
+        "service": "play_media",
+        "target": "media_player.bathroom_homepod"
+      }
+    ],
+    "expected_spoken_contains": ["Quiet hours", "queued"],
+    "expected_receipt": {"recorded": true, "count": 2}
+  },
+  {
+    "name": "shower_routine_guest_mode_private_suppressed",
+    "journey": "delegate_the_routine",
+    "area_id": "bathroom",
+    "device_id": "voice_pe_living_room",
+    "trigger": {
+      "type": "presence",
+      "event": "shower_start",
+      "zone": "bathroom_shower"
+    },
+    "context": {
+      "quiet_hours": false,
+      "guest_mode": true
+    },
+    "expected_category": "routine",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "announce", "service": "speak_readout"},
+      {
+        "domain": "media_player",
+        "service": "play_media",
+        "target": "media_player.bathroom_homepod"
+      }
+    ],
+    "expected_spoken_contains": ["Private items are held", "Playing"],
+    "expected_receipt": {"recorded": true, "count": 2}
+  },
+  {
+    "name": "shower_sensor_false_positive_suppressed",
+    "journey": "delegate_the_routine",
+    "area_id": "bathroom",
+    "device_id": "voice_pe_living_room",
+    "trigger": {
+      "type": "presence",
+      "event": "shower_start",
+      "zone": "bathroom_shower"
+    },
+    "context": {
+      "false_positive": true
+    },
+    "expected_error": "false_positive_suppressed",
+    "expected_spoken_contains": ["false positive"],
+    "expected_confirmation": false,
+    "expected_actions": [],
+    "expected_receipt": {"recorded": false, "count": 0}
+  },
+  {
+    "name": "dev_ops_test_run_reports_result",
+    "journey": "run_my_systems",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Run the tests",
+    "expected_category": "routine",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "devops", "service": "run_tests"}
+    ],
+    "expected_spoken_contains": ["Tests passed", "exit code 0"],
+    "expected_receipt": {"recorded": true, "count": 1}
+  },
+  {
+    "name": "dev_ops_deploy_requires_confirmation",
+    "journey": "run_my_systems",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Deploy the dashboard",
+    "expected_category": "consequential",
+    "expected_confirmation": true,
+    "confirmation_response": "yes",
+    "expected_actions": [
+      {"domain": "devops", "service": "deploy"}
+    ],
+    "expected_spoken_contains": ["Deployed dashboard"],
+    "expected_receipt": {"recorded": true, "confirmed": true, "count": 1}
+  },
+  {
+    "name": "dev_ops_failing_tests_honest_report",
+    "journey": "run_my_systems",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Run the tests",
+    "context": {
+      "failing_tests": true,
+      "project": "parker-voice-lab"
+    },
+    "expected_category": "routine",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "devops", "service": "run_tests"}
+    ],
+    "expected_spoken_contains": ["Tests failed", "not reporting success"],
+    "expected_receipt": {"recorded": true, "count": 1}
+  },
+  {
+    "name": "research_rundown_cited_sources",
+    "journey": "coordinate_my_day",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Research the best mmWave presence sensors and give me the rundown",
+    "expected_category": "read",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "research", "service": "rundown"}
+    ],
+    "expected_spoken_contains": ["Sources", "Aqara FP2"],
+    "expected_receipt": {"recorded": true, "count": 1}
+  },
+  {
+    "name": "research_conflicting_claims_disclosed",
+    "journey": "coordinate_my_day",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Research conflicting mmWave claims",
+    "context": {
+      "inject_conflicts": true
+    },
+    "expected_category": "read",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "research", "service": "rundown"}
+    ],
+    "expected_spoken_contains": ["Conflicting claims", "Sources"],
+    "expected_receipt": {"recorded": true, "count": 1}
+  },
+  {
+    "name": "routine_condition_true_executes",
+    "journey": "delegate_the_routine",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Run jacket weather routine true",
+    "expected_category": "routine",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "routine", "service": "evaluate"}
+    ],
+    "expected_spoken_contains": ["jacket"],
+    "expected_receipt": {"recorded": true, "count": 1}
+  },
+  {
+    "name": "routine_condition_false_skips",
+    "journey": "delegate_the_routine",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Run jacket weather routine false",
+    "expected_category": "routine",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "routine", "service": "evaluate"}
+    ],
+    "expected_spoken_contains": ["condition is false", "no action"],
+    "expected_receipt": {"recorded": true, "count": 1}
+  },
+  {
+    "name": "routine_stale_source_no_action",
+    "journey": "delegate_the_routine",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Run jacket weather routine stale",
+    "expected_category": "routine",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "routine", "service": "evaluate"}
+    ],
+    "expected_spoken_contains": ["stale"],
+    "expected_receipt": {"recorded": true, "count": 1}
+  },
+  {
+    "name": "anomaly_door_open_flagged",
+    "journey": "watch_the_home",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Anything weird going on?",
+    "expected_category": "read",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "anomaly", "service": "scan"}
+    ],
+    "expected_spoken_contains": ["odd", "lock.front_door"],
+    "expected_receipt": {"recorded": true, "count": 1}
+  },
+  {
+    "name": "anomaly_insufficient_history_no_claim",
+    "journey": "watch_the_home",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Anomaly insufficient history",
+    "expected_category": "read",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "anomaly", "service": "scan"}
+    ],
+    "expected_spoken_contains": ["enough history", "anomaly"],
+    "expected_receipt": {"recorded": true, "count": 1}
+  },
+  {
+    "name": "travel_prep_plan_generated",
+    "journey": "coordinate_my_day",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Prepare me for my trip to New York",
+    "expected_category": "read",
+    "expected_confirmation": false,
+    "expected_actions": [
+      {"domain": "travel", "service": "prepare"}
+    ],
+    "expected_spoken_contains": ["New York", "Pack", "Check-in"],
+    "expected_receipt": {"recorded": true, "count": 1}
+  },
+  {
+    "name": "travel_checkin_requires_confirmation",
+    "journey": "coordinate_my_day",
+    "area_id": "living_room",
+    "device_id": "voice_pe_living_room",
+    "utterance": "Check in for flight UA412",
+    "expected_category": "consequential",
+    "expected_confirmation": true,
+    "confirmation_response": "yes",
+    "expected_actions": [
+      {"domain": "travel", "service": "check_in"}
+    ],
+    "expected_spoken_contains": ["Checked in", "UA412"],
+    "expected_receipt": {"recorded": true, "confirmed": true, "count": 1}
   }
 ]

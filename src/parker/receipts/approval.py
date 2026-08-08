@@ -12,11 +12,17 @@ from parker.receipts.store import ReceiptStore
 _CONSEQUENTIAL_RULES: set[tuple[str, str]] = {
     ("lock", "lock"),
     ("lock", "unlock"),
+    ("devops", "deploy"),
+    ("devops", "restart"),
+    ("devops", "publish"),
+    ("travel", "check_in"),
+    ("security", "arm"),
 }
 
 _IRREVERSIBLE_RULES: set[tuple[str, str]] = {
     ("automation", "delete"),
     ("notify", "send"),
+    ("messaging", "send"),
 }
 
 

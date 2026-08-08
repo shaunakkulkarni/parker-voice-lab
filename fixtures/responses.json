@@ -156,6 +156,109 @@
       "requires_confirmation": false,
       "spoken": "Okay, I won't do that.",
       "deny": true
+    },
+    {
+      "match": "run the tests",
+      "intent": "dev_ops_test",
+      "category": "routine",
+      "plan_intent": "dev_ops_test",
+      "plan_parameters": {"project": "parker-voice-lab"},
+      "spoken": "Running the tests."
+    },
+    {
+      "match": "deploy the dashboard",
+      "intent": "dev_ops_deploy",
+      "category": "consequential",
+      "requires_confirmation": true,
+      "plan_intent": "dev_ops_deploy",
+      "plan_parameters": {"target": "dashboard"},
+      "spoken": "Should I deploy dashboard?"
+    },
+    {
+      "match": "what's the deploy status",
+      "intent": "dev_ops_status",
+      "category": "read",
+      "plan_intent": "dev_ops_test",
+      "plan_parameters": {"project": "parker-voice-lab"},
+      "spoken": "Checking status."
+    },
+    {
+      "match": "research the best mmwave",
+      "intent": "research",
+      "category": "read",
+      "plan_intent": "research",
+      "plan_parameters": {
+        "topic": "best mmWave presence sensors"
+      },
+      "spoken": "Researching that now."
+    },
+    {
+      "match": "research conflicting",
+      "intent": "research",
+      "category": "read",
+      "plan_intent": "research",
+      "plan_parameters": {
+        "topic": "conflicting mmWave claims",
+        "inject_conflicts": true
+      },
+      "spoken": "Researching that now."
+    },
+    {
+      "match": "run jacket weather routine true",
+      "intent": "routine_run",
+      "category": "routine",
+      "plan_intent": "routine_run",
+      "plan_parameters": {"routine_id": "jacket_weather", "mode": "true"},
+      "spoken": "Evaluating the jacket weather routine."
+    },
+    {
+      "match": "run jacket weather routine false",
+      "intent": "routine_run",
+      "category": "routine",
+      "plan_intent": "routine_run",
+      "plan_parameters": {"routine_id": "jacket_weather", "mode": "false"},
+      "spoken": "Evaluating the jacket weather routine."
+    },
+    {
+      "match": "run jacket weather routine stale",
+      "intent": "routine_run",
+      "category": "routine",
+      "plan_intent": "routine_run",
+      "plan_parameters": {"routine_id": "jacket_weather", "mode": "stale"},
+      "spoken": "Evaluating the jacket weather routine."
+    },
+    {
+      "match": "anything weird going on",
+      "intent": "anomaly_scan",
+      "category": "read",
+      "plan_intent": "anomaly_scan",
+      "plan_parameters": {},
+      "spoken": "Scanning for anomalies."
+    },
+    {
+      "match": "anomaly insufficient history",
+      "intent": "anomaly_scan",
+      "category": "read",
+      "plan_intent": "anomaly_scan",
+      "plan_parameters": {"insufficient_history": true},
+      "spoken": "Scanning for anomalies."
+    },
+    {
+      "match": "prepare me for my trip to new york",
+      "intent": "travel_prep",
+      "category": "read",
+      "plan_intent": "travel_prep",
+      "plan_parameters": {"destination": "new_york"},
+      "spoken": "Preparing your trip plan."
+    },
+    {
+      "match": "check in for flight ua412",
+      "intent": "travel_checkin",
+      "category": "consequential",
+      "requires_confirmation": true,
+      "plan_intent": "travel_checkin",
+      "plan_parameters": {"flight": "UA412"},
+      "spoken": "Should I check in for flight UA412?"
     }
   ]
 }

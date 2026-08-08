@@ -19,6 +19,7 @@ from parker.context.state import StateMachine
 from parker.contracts._time import utc_now
 from parker.contracts.actions import ActionReceipt, ActionRequest, ActionResult
 from parker.contracts.context import SystemStatus
+from parker.contracts.plan import ActionPlan, Journey
 from parker.receipts.store import ReceiptStore
 from parker.simulator.latency import LATENCY_TARGETS_MS, LatencyLogger, LatencyReport
 from parker.simulator.pipeline import PipelineResult, VoicePipeline
@@ -26,6 +27,12 @@ from parker.simulator.scenarios import (
     check_scenario_expectations,
     load_scenarios,
     run_scenario,
+)
+
+NEW_JOURNEYS = (
+    Journey.RUN_MY_SYSTEMS,
+    Journey.DELEGATE_THE_ROUTINE,
+    Journey.WATCH_THE_HOME,
 )
 
 HISTORY_LIMIT = 20
@@ -96,6 +103,13 @@ class HealthSnapshot(BaseModel):
     tts: str = "simulated"
     voice_preview_edition: str = "not_connected"
     live_device_actions: bool = False
+    presence: str = "ready"
+    media: str = "ready"
+    devops: str = "ready"
+    research: str = "ready"
+    routines: str = "ready"
+    anomaly: str = "ready"
+    travel: str = "ready"
 
 
 class ConsoleEvent(BaseModel):
@@ -120,6 +134,7 @@ class ConsoleRun(BaseModel):
     completed_at: datetime
     run_type: RunType
     scenario_name: str | None = None
+    journey: str | None = None
     utterance: str | None = None
     area_id: str
     voice_device_id: str
@@ -130,10 +145,14 @@ class ConsoleRun(BaseModel):
     error_code: str | None = None
     action: ActionRequest | None = None
     action_result: ActionResult | None = None
+    plan: ActionPlan | None = None
+    risk_class: str | None = None
     receipt: ActionReceipt | None = None
+    receipts: list[ActionReceipt] = Field(default_factory=list)
     latency_trace: LatencyTrace
     final_state: str
     confirmed: bool | None = None
+    authority: str | None = None
 
 
 class SuiteSummary(BaseModel):
@@ -162,9 +181,12 @@ class SessionSnapshot(BaseModel):
 
 class ScenarioInfo(BaseModel):
     name: str
+    journey: str | None = None
     utterance: str | None = None
     turns: list[dict[str, Any]] | None = None
+    trigger: dict[str, Any] | None = None
     expected_action: dict[str, Any] | None = None
+    expected_actions: list[dict[str, Any]] | None = None
     expected_category: str | None = None
     expected_error: str | None = None
     requires_confirmation: bool = False
@@ -235,12 +257,37 @@ def _actual_from_result(result: PipelineResult) -> dict[str, Any]:
             "service": result.action.service,
             "entity": result.action.target_entity,
         }
+    plan_payload = None
+    if result.plan is not None:
+        plan_payload = {
+            "capability": result.plan.capability,
+            "risk_class": result.plan.risk_class.value,
+            "autonomy_opt_in": result.plan.autonomy_opt_in,
+            "steps": [
+                {
+                    "domain": s.domain,
+                    "service": s.service,
+                    "target": s.target_entity,
+                    "category": s.category.value,
+                    "gate_policy": s.gate_policy.value,
+                    "status": s.status.value,
+                }
+                for s in result.plan.steps
+            ],
+        }
     return {
         "spoken": result.spoken,
         "error_code": result.error_code,
         "action": action_payload,
+        "plan": plan_payload,
         "category": result.category.value if result.category else None,
+        "risk_class": result.plan.risk_class.value if result.plan else (
+            result.category.value if result.category else None
+        ),
+        "journey": result.journey.value if result.journey else None,
         "confirmed": result.confirmed,
+        "awaiting_confirmation": result.awaiting_confirmation,
+        "receipt_count": result.receipt_count,
         "turn_state": result.turn.state.value,
     }
 
@@ -248,10 +295,13 @@ def _actual_from_result(result: PipelineResult) -> dict[str, Any]:
 def _expected_from_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
     return {
         "expected_action": scenario.get("expected_action"),
+        "expected_actions": scenario.get("expected_actions"),
         "expected_category": scenario.get("expected_category"),
         "expected_error": scenario.get("expected_error"),
+        "expected_confirmation": scenario.get("expected_confirmation"),
         "requires_confirmation": scenario.get("requires_confirmation"),
         "confirmation_response": scenario.get("confirmation_response"),
+        "journey": scenario.get("journey"),
     }
 
 
@@ -350,15 +400,22 @@ class ConsoleController:
     def list_scenarios(self) -> list[ScenarioInfo]:
         infos: list[ScenarioInfo] = []
         for scenario in load_scenarios():
+            requires = bool(
+                scenario.get("requires_confirmation")
+                or scenario.get("expected_confirmation")
+            )
             infos.append(
                 ScenarioInfo(
                     name=scenario["name"],
+                    journey=scenario.get("journey"),
                     utterance=scenario.get("utterance"),
                     turns=scenario.get("turns"),
+                    trigger=scenario.get("trigger"),
                     expected_action=scenario.get("expected_action"),
+                    expected_actions=scenario.get("expected_actions"),
                     expected_category=scenario.get("expected_category"),
                     expected_error=scenario.get("expected_error"),
-                    requires_confirmation=bool(scenario.get("requires_confirmation")),
+                    requires_confirmation=requires,
                     confirmation_response=scenario.get("confirmation_response"),
                     area_id=scenario["area_id"],
                     device_id=scenario["device_id"],
@@ -366,6 +423,12 @@ class ConsoleController:
                 )
             )
         return infos
+
+    def list_journeys(self) -> list[str]:
+        journeys = {s.journey for s in self.list_scenarios() if s.journey}
+        for journey in NEW_JOURNEYS:
+            journeys.add(journey.value)
+        return sorted(journeys)
 
     def session(self) -> SessionSnapshot:
         return SessionSnapshot(
@@ -428,14 +491,34 @@ class ConsoleController:
         passed: bool | None,
         expected: dict[str, Any] | None,
         actual: dict[str, Any] | None,
+        journey: str | None = None,
     ) -> ConsoleRun:
-        ha_ran = result.action_result is not None or result.error_code == "service_unavailable"
+        ha_ran = (
+            result.action_result is not None
+            or result.error_code == "service_unavailable"
+            or (result.plan is not None and result.receipt_count > 0)
+        )
+        before_ids = {r.id for r in self._session_receipts}
         receipt = self._sync_session_receipts()
+        new_receipts = [r for r in self._session_receipts if r.id not in before_ids]
+        if receipt is not None and receipt not in new_receipts:
+            new_receipts.append(receipt)
+        authority = None
+        if receipt is not None:
+            authority = receipt.authority
+        risk = None
+        if result.plan is not None:
+            risk = result.plan.risk_class.value
+        elif result.category is not None:
+            risk = result.category.value
         run = ConsoleRun(
             started_at=started_at,
             completed_at=datetime.now(UTC),
             run_type=run_type,
             scenario_name=scenario_name,
+            journey=journey
+            or (result.journey.value if result.journey else None)
+            or (expected or {}).get("journey"),
             utterance=utterance,
             area_id=area_id,
             voice_device_id=device_id,
@@ -446,10 +529,14 @@ class ConsoleController:
             error_code=result.error_code,
             action=result.action,
             action_result=result.action_result,
+            plan=result.plan,
+            risk_class=risk,
             receipt=receipt,
+            receipts=new_receipts,
             latency_trace=build_latency_trace(result.latency, ha_ran=ha_ran),
             final_state=self.state.state.value,
             confirmed=result.confirmed,
+            authority=authority,
         )
         self._runs.append(run)
         self._refresh_pending(result=result, area_id=area_id, device_id=device_id)
@@ -573,6 +660,7 @@ class ConsoleController:
                     self.pipeline.ha_adapter.reset()
                     self.pipeline.ha_adapter.offline_entities = offline
                 self.pipeline.conversations.clear()
+                self.pipeline.providers.reset()
                 self.state.set_pending_confirmation(None)
                 self._pending_meta = None
 
@@ -651,6 +739,7 @@ class ConsoleController:
             if isinstance(self.pipeline.ha_adapter, MockHomeAssistant):
                 self.pipeline.ha_adapter.reset()
             self.pipeline.conversations.clear()
+            self.pipeline.providers.reset()
             # Keep the same receipt store path/object; clear only session view.
             assert self.pipeline.receipt_store is not None
             # Drop in-memory receipt cache so session receipts reset, but do not

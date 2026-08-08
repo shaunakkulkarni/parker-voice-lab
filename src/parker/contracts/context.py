@@ -1,5 +1,7 @@
 """Conversation, room, and system status contracts."""
 
+from __future__ import annotations
+
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
@@ -9,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from parker.contracts._time import utc_now
 from parker.contracts.actions import ActionRequest
+from parker.contracts.plan import ActionPlan
 from parker.contracts.voice import VoiceTurn
 
 
@@ -43,11 +46,14 @@ class ConversationContext(BaseModel):
     turns: list[VoiceTurn] = Field(default_factory=list)
     last_action: ActionRequest | None = None
     pending_confirmation: ActionRequest | None = None
+    pending_plan: ActionPlan | None = None
     started_at: datetime = Field(default_factory=utc_now)
     last_active: datetime = Field(default_factory=utc_now)
     expires_after_seconds: int = 120
     # Topic hint for follow-ups like "And tomorrow?"
     last_topic: str | None = None
+    guest_mode: bool = False
+    quiet_hours: bool = False
 
     @property
     def is_expired(self) -> bool:

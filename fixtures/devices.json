@@ -52,13 +52,28 @@
       "area_id": "kitchen",
       "state": "off",
       "attributes": {}
+    },
+    {
+      "entity_id": "media_player.bathroom_homepod",
+      "friendly_name": "Bathroom HomePod",
+      "area_id": "bathroom",
+      "state": "idle",
+      "attributes": {"volume_level": 0.35, "media_title": null}
+    },
+    {
+      "entity_id": "binary_sensor.bathroom_shower_zone",
+      "friendly_name": "Bathroom Shower Zone",
+      "area_id": "bathroom",
+      "state": "off",
+      "attributes": {"device_class": "occupancy", "sensor": "aqara_fp2_mock"}
     }
   ],
   "areas": [
     {"area_id": "living_room", "name": "Living Room"},
     {"area_id": "bedroom", "name": "Bedroom"},
     {"area_id": "kitchen", "name": "Kitchen"},
-    {"area_id": "hallway", "name": "Hallway"}
+    {"area_id": "hallway", "name": "Hallway"},
+    {"area_id": "bathroom", "name": "Bathroom"}
   ],
   "voice_devices": [
     {

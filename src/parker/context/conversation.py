@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 from parker.contracts.actions import ActionRequest
 from parker.contracts.context import ConversationContext
 from parker.contracts.errors import ContextExpiredError
+from parker.contracts.plan import ActionPlan
 from parker.contracts.voice import VoiceTurn
 
 
@@ -65,6 +66,23 @@ class ConversationManager:
     ) -> ConversationContext:
         ctx = self.touch(voice_device_id)
         ctx.pending_confirmation = action
+        return ctx
+
+    def set_pending_plan(
+        self, voice_device_id: str, plan: ActionPlan | None
+    ) -> ConversationContext:
+        ctx = self.touch(voice_device_id)
+        ctx.pending_plan = plan
+        return ctx
+
+    def set_guest_mode(self, voice_device_id: str, enabled: bool) -> ConversationContext:
+        ctx = self.touch(voice_device_id)
+        ctx.guest_mode = enabled
+        return ctx
+
+    def set_quiet_hours(self, voice_device_id: str, enabled: bool) -> ConversationContext:
+        ctx = self.touch(voice_device_id)
+        ctx.quiet_hours = enabled
         return ctx
 
     def set_topic(self, voice_device_id: str, topic: str | None) -> ConversationContext:

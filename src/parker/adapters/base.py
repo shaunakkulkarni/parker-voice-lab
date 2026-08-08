@@ -26,6 +26,9 @@ class HermesResponse(BaseModel):
     topic: str | None = None
     resolve_room_light: bool = False
     parameters: dict[str, Any] = Field(default_factory=dict)
+    # Gated-autonomy plan intents (built by the pipeline engine)
+    plan_intent: str | None = None
+    plan_parameters: dict[str, Any] = Field(default_factory=dict)
 
 
 class HomeAssistantAdapter(ABC):

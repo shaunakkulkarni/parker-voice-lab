@@ -33,6 +33,11 @@ def test_html_contains_console_controls() -> None:
     assert 'id="action-receipt"' in html
     assert 'id="event-log"' in html
     assert 'id="scenario-runner"' in html
+    assert 'id="plan-panel"' in html
+    assert 'id="journeys-panel"' in html
+    assert "Run my systems" in html
+    assert "Delegate the routine" in html
+    assert "Watch the home" in html
     assert "Turn on the living room light" in html
     assert "What's the temperature?" in html
     assert "Lock the front door" in html
